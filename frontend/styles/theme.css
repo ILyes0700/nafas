@@ -1,0 +1,416 @@
+/* ==========================================================
+   Gabes Tatenafas — Thème global
+   Design : minimaliste, blanc cassé, premium, institutionnel
+   ========================================================== */
+
+:root {
+  --bg:        #f8f7f2;          /* blanc cassé */
+  --bg-soft:   #f1efe8;
+  --surface:   #ffffff;
+  --border:    #e6e3da;
+  --border-2:  #f0ede4;
+
+  --ink:       #1f2937;
+  --ink-soft:  #4b5563;
+  --muted:     #6b7280;
+  --muted-2:   #9ca3af;
+
+  --primary:   #0d3b66;          /* bleu institutionnel */
+  --primary-2: #1d4e89;
+  --primary-3: #e8eef6;
+
+  --safe:      #16a34a;
+  --safe-bg:   #dcfce7;
+  --warning:   #d97706;
+  --warning-bg:#fef3c7;
+  --danger:    #dc2626;
+  --danger-bg: #fee2e2;
+  --critical:  #991b1b;
+
+  --shadow-sm: 0 1px 2px rgba(15,23,42,.04);
+  --shadow:    0 4px 14px rgba(15,23,42,.06);
+  --shadow-lg: 0 12px 30px rgba(15,23,42,.08);
+
+  --radius:    14px;
+  --radius-sm: 10px;
+  --radius-lg: 18px;
+
+  --sidebar-w: 252px;
+  --topbar-h:  64px;
+
+  --font: 'Inter', 'Segoe UI', 'Cairo', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--primary); text-decoration: none; }
+a:hover { color: var(--primary-2); }
+
+button { font-family: inherit; }
+
+/* ---- Layout ---- */
+.app {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  min-height: 100vh;
+}
+
+/* Topbar */
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  height: var(--topbar-h);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 28px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.topbar h1 { font-size: 16px; font-weight: 600; margin: 0; color: var(--ink); }
+.topbar .subtitle { color: var(--muted); font-size: 12px; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+
+.role-select {
+  height: 38px; padding: 0 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  color: var(--ink); font-weight: 500;
+  cursor: pointer;
+}
+.role-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px;
+  background: var(--primary-3); color: var(--primary);
+  font-size: 12px; font-weight: 600;
+}
+
+/* Main */
+.main { padding: 28px 36px 60px; }
+.page-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.page-title h2 { margin: 0; font-size: 22px; font-weight: 700; color: var(--primary); }
+.page-title .ar { color: var(--muted); margin-left: 12px; font-size: 14px; font-weight: 400; }
+
+/* ---- Cards ---- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow .2s, transform .2s;
+}
+.card:hover { box-shadow: var(--shadow); }
+.card h3 { margin: 0 0 6px; font-size: 14px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
+.card .value { font-size: 30px; font-weight: 700; color: var(--ink); margin: 6px 0; }
+.card .hint { font-size: 12px; color: var(--muted); }
+
+.grid { display: grid; gap: 18px; }
+.grid-4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+.grid-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+.grid-2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+
+@media (max-width: 1180px) { .grid-4 { grid-template-columns: repeat(2,1fr); } .grid-3 { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 720px)  { .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; } }
+
+/* ---- Pills / Status ---- */
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 600;
+}
+.pill.safe     { background: var(--safe-bg);    color: var(--safe);}
+.pill.warning  { background: var(--warning-bg); color: var(--warning);}
+.pill.danger   { background: var(--danger-bg);  color: var(--danger);}
+.pill.critical { background: var(--danger-bg);  color: var(--critical);}
+.pill.info     { background: var(--primary-3);  color: var(--primary);}
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.dot.safe { background: var(--safe);} .dot.warning { background: var(--warning);} .dot.danger,.dot.critical { background: var(--danger);}
+
+/* ---- Buttons ---- */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600; font-size: 13px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.btn:hover { border-color: var(--primary); color: var(--primary); }
+.btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+.btn.primary:hover { background: var(--primary-2); border-color: var(--primary-2); color: #fff; }
+.btn.danger  { background: var(--danger); border-color: var(--danger); color: #fff; }
+.btn.danger:hover { opacity:.92; color:#fff; }
+.btn.ghost   { background: transparent; }
+.btn.warning { background: var(--warning); border-color: var(--warning); color: #fff; }
+
+/* ---- Tables ---- */
+.table {
+  width: 100%; border-collapse: collapse;
+  background: var(--surface); border-radius: var(--radius);
+  overflow: hidden; border: 1px solid var(--border);
+}
+.table th, .table td { padding: 12px 14px; text-align: left; font-size: 13px; }
+.table th { background: var(--bg-soft); color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; font-size: 11px; }
+.table tr + tr td { border-top: 1px solid var(--border-2); }
+.table tr:hover td { background: #fbfaf6; }
+
+/* ---- Forms ---- */
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.field label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.field input, .field select, .field textarea {
+  padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--ink); font-family: inherit; font-size: 14px;
+  transition: border-color .15s;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-3);
+}
+.field textarea { min-height: 100px; resize: vertical; }
+
+/* ---- Progress / Bars ---- */
+.bar { background: var(--bg-soft); border-radius: 999px; height: 8px; overflow: hidden; }
+.bar > span { display: block; height: 100%; background: var(--primary); border-radius: 999px; transition: width .4s; }
+.bar.safe > span { background: var(--safe);}
+.bar.warning > span { background: var(--warning);}
+.bar.danger > span, .bar.critical > span { background: var(--danger);}
+
+/* ---- Empty / loading ---- */
+.empty { text-align: center; color: var(--muted); padding: 40px 20px; }
+.skeleton { background: linear-gradient(90deg, #eeece4 0%, #f6f4ee 50%, #eeece4 100%); background-size:200% 100%; animation: sk 1.4s linear infinite; border-radius: 8px; height: 14px; }
+@keyframes sk { 0%{background-position:200% 0} 100%{background-position:-200% 0}}
+
+/* ---- Animations ---- */
+.fade-in { animation: fade .3s ease-out; }
+@keyframes fade { from { opacity: 0; transform: translateY(4px);} to { opacity: 1; transform: none;} }
+
+/* ---- Map (SVG zones) ---- */
+.map-wrap { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.map-wrap svg { width: 100%; height: 460px; display:block; }
+.map-zone { cursor: pointer; transition: opacity .15s, transform .15s; transform-origin: center; }
+.map-zone:hover { opacity: .85; }
+
+/* ---- Chatbot ---- */
+.chat-wrap { display: grid; grid-template-rows: 1fr auto; height: 70vh; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.chat-log { padding: 20px; overflow-y: auto; }
+.bubble { padding: 12px 14px; border-radius: 16px; max-width: 70%; margin-bottom: 10px; line-height: 1.5; font-size: 14px; }
+.bubble.bot  { background: var(--bg-soft); color: var(--ink); border-bottom-left-radius: 4px; }
+.bubble.user { background: var(--primary); color: #fff; margin-left: auto; border-bottom-right-radius: 4px; }
+.chat-input { display: flex; gap: 10px; padding: 14px; border-top: 1px solid var(--border); }
+.chat-input input { flex: 1; }
+.chat-suggest { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 20px 14px; }
+.chat-suggest button { background: var(--primary-3); border: none; color: var(--primary); padding: 6px 12px; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600; }
+.chat-suggest button:hover { background: var(--primary); color: #fff; }
+
+/* ---- Misc ---- */
+.row { display: flex; gap: 14px; align-items: center; }
+.row.between { justify-content: space-between; }
+.muted { color: var(--muted); }
+.section + .section { margin-top: 22px; }
+
+hr { border: 0; border-top: 1px solid var(--border); margin: 22px 0; }
+
+/* ==========================================================
+   Scrollbar — design Nafass (navy #17487b)
+   Cible : sidebar, pages, modals, listes scrollables
+   Webkit (Chrome/Edge/Electron/Safari/WebView Android) + Firefox
+   ========================================================== */
+
+:root {
+  --scroll-thumb:        #17487b;
+  --scroll-thumb-hover:  #0d3b66;
+  --scroll-thumb-active: #092a4d;
+  --scroll-track:        #eef2f7;
+}
+
+/* Firefox (et navigateurs supportant scrollbar-color) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+}
+
+/* Webkit — barre verticale + horizontale */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: var(--scroll-track);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #17487b 0%, #0d3b66 100%);
+  border-radius: 999px;
+  border: 2px solid var(--scroll-track);
+  background-clip: padding-box;
+  transition: background 0.2s, border-color 0.2s;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #1d568f 0%, #0d3b66 100%);
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #092a4d 0%, #061d36 100%);
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-corner {
+  background: var(--scroll-track);
+}
+
+/* Sidebar — variante plus discrète (track quasi invisible sur surface claire) */
+.sidebar::-webkit-scrollbar { width: 8px; }
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #17487b 0%, #0d3b66 100%);
+  border: 2px solid var(--surface, #fff);
+  background-clip: padding-box;
+}
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #1d568f 0%, #0d3b66 100%);
+  background-clip: padding-box;
+}
+.sidebar { scrollbar-color: #17487b transparent; }
+
+/* Hero/cards à fond navy : scrollbar inversée (clair sur sombre) */
+.dash-hero::-webkit-scrollbar-thumb,
+.admin-hero::-webkit-scrollbar-thumb,
+.school-hero::-webkit-scrollbar-thumb,
+.reports-hero::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.55);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.dash-hero::-webkit-scrollbar-track,
+.admin-hero::-webkit-scrollbar-track,
+.school-hero::-webkit-scrollbar-track,
+.reports-hero::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.10);
+}
+
+/* Mobile : barres légèrement plus fines */
+@media (max-width: 640px) {
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+}
+
+/* ==========================================================
+   Page Head — composant universel d'en-tête (correctif tailles SVG)
+   ========================================================== */
+/* APPROCHE BULLETPROOF :
+   L'icône est positionnée en absolute, le contenu flotte autour.
+   Marche AVEC n'importe quelle structure HTML, peu importe les wrappers. */
+.page-head {
+  position: relative !important;
+  padding: 16px 18px 16px 80px !important;
+  min-height: 76px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--radius, 14px);
+  margin-bottom: 18px;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  display: block;
+}
+.page-head .ph-icon {
+  position: absolute !important;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0d3b66, #2f6fb3);
+  display: flex !important;
+  align-items: center; justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+.page-head .ph-icon svg {
+  width: 22px !important;
+  height: 22px !important;
+  flex-shrink: 0;
+}
+.page-head .ph-body {
+  display: block;
+  min-width: 0;
+}
+.page-head .ph-title {
+  margin: 0;
+  font-size: 18px; font-weight: 700; color: var(--ink, #0f172a);
+  line-height: 1.25;
+}
+.page-head .ph-sub {
+  margin: 2px 0 0;
+  font-size: 13px; color: var(--muted, #64748b);
+  line-height: 1.4;
+}
+.page-head .ph-actions {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex; gap: 8px; align-items: center;
+}
+
+/* Safety nets — empêche n'importe quel SVG en haut de page de "grandir" si CSS manque */
+.page-head svg,
+.page-head .ph-icon svg,
+.ph-icon > svg {
+  max-width: 24px;
+  max-height: 24px;
+}
+
+/* SVG inline dans les boutons / badges — tailles standardisées.
+   Règle générique : tout SVG dans un .btn est borné à 16×16 par défaut,
+   sauf override explicite (ex: .btn svg.btn-ico à 14×14 pour la compacité). */
+.btn > svg {
+  width: 16px; height: 16px;
+  flex-shrink: 0;
+}
+.btn .btn-ico,
+.btn svg.btn-ico {
+  width: 14px; height: 14px;
+  display: inline-block; vertical-align: -2px;
+  flex-shrink: 0;
+}
+.pill svg, .chip svg, .tag svg {
+  width: 12px; height: 12px;
+  vertical-align: -1px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .page-head { padding: 14px 14px 14px 64px !important; min-height: 64px; }
+  .page-head .ph-icon { left: 12px; width: 40px !important; height: 40px !important; border-radius: 10px; }
+  .page-head .ph-icon svg { width: 20px !important; height: 20px !important; }
+  .page-head .ph-title { font-size: 16px; }
+  .page-head .ph-sub { font-size: 12px; }
+  .page-head .ph-actions { position: static; transform: none; margin-top: 8px; }
+}
+
+/* =========================================================
+   Pro inline icons (Lucide style, stroke = currentColor)
+   Introduced to replace legacy emoji across pages.
+   Matches the sidebar icon set (stroke-width 1.75).
+   ========================================================= */
+.ico-inline{
+  display:inline-block;
+  width:1.05em;height:1.05em;
+  vertical-align:-0.18em;
+  flex:none;
+}
+.ico-lead{margin-right:6px}          /* leading icon before a label */
+.dr-scale .ico-mood{width:18px;height:18px;color:#6b7280}
+.dai-block-ico .ico-inline{width:1.15em;height:1.15em;vertical-align:-0.22em}
+.sci-best-check .ico-inline{width:30px;height:30px;vertical-align:middle}

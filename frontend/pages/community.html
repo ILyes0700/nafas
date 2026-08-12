@@ -1,0 +1,116 @@
+<!-- Community — Facebook-style social page (all users). Uses dashboard-feed.js + dashboard-feed.css structure. -->
+<section class="page community-page">
+  <style>
+    .community-page .cmy-hero{display:flex;align-items:center;gap:16px;padding:20px 22px;border-radius:20px;
+      background:linear-gradient(120deg,#0a2f52 0%,#0d3b66 45%,#1d4e89 100%);color:#fff;
+      box-shadow:0 12px 30px rgba(13,59,102,.32);position:relative;overflow:hidden}
+    .community-page .cmy-hero::after{content:"";position:absolute;right:-40px;top:-40px;width:180px;height:180px;
+      border-radius:50%;background:rgba(255,255,255,.10)}
+    .community-page .cmy-hero::before{content:"";position:absolute;right:60px;bottom:-60px;width:150px;height:150px;
+      border-radius:50%;background:rgba(255,255,255,.07)}
+    .community-page .cmy-hero-ic{flex:0 0 auto;width:52px;height:52px;border-radius:15px;background:rgba(255,255,255,.16);
+      display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+    .community-page .cmy-hero-ic svg{width:27px;height:27px}
+    .community-page .cmy-hero h1{margin:0;font-size:23px;font-weight:800;letter-spacing:-.4px}
+    .community-page .cmy-hero p{margin:4px 0 0;font-size:13.5px;opacity:.92;max-width:560px}
+    .community-page .cmy-hero-stat{margin-left:auto;display:flex;gap:22px;position:relative;z-index:2}
+    .community-page .cmy-hero-stat div{text-align:center}
+    .community-page .cmy-hero-stat b{display:block;font-size:22px;font-weight:800;line-height:1}
+    .community-page .cmy-hero-stat span{font-size:11px;opacity:.85;text-transform:uppercase;letter-spacing:.5px}
+    @media (max-width:720px){.community-page .cmy-hero-stat{display:none}}
+    /* chips icon colors + search icon svg sizing */
+    #df-root .df-chip svg{width:17px;height:17px;vertical-align:-3px;margin-right:6px}
+    #df-root .df-search-ico svg{width:17px;height:17px;display:block}
+    #df-root .df-icon-btn svg{width:18px;height:18px}
+    #df-root .df-side .df-card h4 svg{width:15px;height:15px;color:#0d3b66}
+    #df-root{margin-top:18px}
+  </style>
+
+  <!-- HERO -->
+  <div class="cmy-hero">
+    <div class="cmy-hero-ic">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </div>
+    <div>
+      <h1>Community</h1>
+      <p>Partagez vos publications, réagissez et échangez avec toute la communauté Nafass.</p>
+    </div>
+    <div class="cmy-hero-stat">
+      <div><b id="cmy-hs-posts">—</b><span>Publications</span></div>
+      <div><b id="cmy-hs-members">—</b><span>Membres</span></div>
+    </div>
+  </div>
+
+  <div id="df-root">
+    <!-- HEAD : search + refresh -->
+    <div class="df-head">
+      <div class="df-search-wrap">
+        <span class="df-search-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
+        <input id="df-search" class="df-search-input" type="text" placeholder="Rechercher publications, personnes, #tags…" maxlength="80">
+      </div>
+      <div class="df-head-tools">
+        <button id="df-refresh" class="df-icon-btn" type="button" title="Rafraîchir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button>
+      </div>
+    </div>
+    <div id="df-search-info" class="df-search-info"></div>
+
+    <!-- GRID : feed | sidebar -->
+    <div class="df-grid">
+      <div class="df-main">
+        <!-- COMPOSER -->
+        <div id="df-composer" class="df-composer">
+          <div class="df-comp-top">
+            <div id="df-composer-avatar" class="df-avatar sm"></div>
+            <textarea id="df-post-body" placeholder="Exprimez-vous… (#tags et @mentions supportés)" maxlength="5000"></textarea>
+          </div>
+          <div class="df-drop-hint">Déposez une image, une vidéo ou un fichier ici…</div>
+          <div id="df-post-preview" class="df-preview" hidden></div>
+          <div id="df-post-err" class="df-err"></div>
+          <div class="df-comp-bar">
+            <div class="df-comp-attach">
+              <input type="file" id="df-post-media" accept="image/*,video/*" hidden>
+              <input type="file" id="df-post-doc" hidden>
+              <button id="df-post-media-btn" class="df-chip" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:#16a34a"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.8"/><path d="M21 15l-5-5L5 21"/></svg>Photo / Vidéo</button>
+              <button id="df-post-doc-btn" class="df-chip" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:#0d3b66"><path d="M21.44 11.05l-9.19 9.19a5 5 0 0 1-7.07-7.07l9.19-9.19a3 3 0 0 1 4.24 4.24l-9.2 9.19a1 1 0 0 1-1.41-1.41l8.49-8.49"/></svg>Fichier</button>
+              <button id="df-theme-btn" class="df-chip" type="button" hidden>Thème</button>
+            </div>
+            <button id="df-post-btn" class="df-post-btn" type="button">Publier</button>
+          </div>
+        </div>
+
+        <div id="df-people"></div>
+
+        <!-- FEED -->
+        <div id="df-feed" class="df-feed"><div class="df-empty">Chargement du fil…</div></div>
+        <div id="df-feed-spinner" class="df-spinner" hidden><span></span><span></span><span></span></div>
+        <div id="df-feed-sentinel"></div>
+      </div>
+
+      <!-- RIGHT SIDEBAR -->
+      <aside class="df-side">
+        <div class="df-card">
+          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>Tendances</h4>
+          <div id="df-trending"><div class="df-muted">—</div></div>
+        </div>
+        <div class="df-card">
+          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Membres actifs</h4>
+          <div id="df-active"><div class="df-muted">—</div></div>
+        </div>
+        <div class="df-card">
+          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/></svg>Tags populaires</h4>
+          <div id="df-hashtags" class="df-hash-wrap"><div class="df-muted">—</div></div>
+        </div>
+        <div class="df-card">
+          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 13l3-3 4 4 5-6"/></svg>Statistiques</h4>
+          <div id="df-stats" class="df-stats-grid"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- FLOATING QUICK ACTIONS -->
+  <div class="df-fab-wrap">
+    <button id="df-fab-compose" class="df-fab df-fab-main" type="button" title="Nouvelle publication"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button id="df-fab-top" class="df-fab df-fab-top" type="button" title="Haut de page"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button>
+  </div>
+</section>

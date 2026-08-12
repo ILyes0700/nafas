@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0d3b66"/>
+      <stop offset="100%" stop-color="#2f6fb3"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="48" fill="url(#g)"/>
+  <path fill="#fff" opacity=".95" d="M64 168c0-30 22-54 56-54s56 24 56 54c0 18-14 28-30 28H94c-16 0-30-10-30-28Z"/>
+  <circle cx="78" cy="74" r="14" fill="#fff" opacity=".7"/>
+  <circle cx="180" cy="64" r="10" fill="#fff" opacity=".5"/>
+  <text x="128" y="232" text-anchor="middle" fill="#fff" font-size="28" font-weight="700" font-family="Segoe UI">قابس</text>
+</svg>

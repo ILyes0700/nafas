@@ -1,0 +1,187 @@
+<section class="page learn-page" id="page-learn">
+
+  <!-- Unified header (matches the rest of the project) -->
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M2 6.5L12 3l10 3.5-10 3.5-10-3.5z"/>
+          <path d="M6 8.5v6c2 1.5 10 1.5 12 0v-6"/>
+          <path d="M22 7v6"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Learn &amp; Prevent· تعلّم و توقّف</h1>
+        <div class="ph-sub">Educational hub: articles, videos, infographics and quizzes about pollution, prevention, and respiratory health.</div>
+      </div>
+    </div>
+    <!-- Admin tools — only visible when the signed-in user has role=admin (toggled by JS) -->
+    <div class="ph-actions" id="learn-admin-tools" hidden>
+      <button class="btn primary" id="learn-admin-add" type="button">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span>Add Resource</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Hero / featured -->
+  <div class="card learn-hero">
+    <div class="lh-text">
+      <span class="lh-eyebrow">Awareness Hub</span>
+      <h2 class="lh-title">Knowledge is the first defence against pollution.</h2>
+      <p class="lh-sub">Explore practical guides built for Gabès residents — what PM2.5 is, how to wear a mask correctly, how to protect children, and what to do during pollution peaks.</p>
+      <div class="lh-stats">
+        <div class="lh-stat"><span class="lh-num" id="learn-stat-articles">—</span><span class="lh-lbl">articles</span></div>
+        <div class="lh-stat"><span class="lh-num" id="learn-stat-videos">—</span><span class="lh-lbl">videos</span></div>
+        <div class="lh-stat"><span class="lh-num" id="learn-stat-quizzes">—</span><span class="lh-lbl">quizzes</span></div>
+      </div>
+    </div>
+    <div class="lh-icon" aria-hidden="true">
+      <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 18L32 8l28 10-28 10L4 18z"/>
+        <path d="M14 22v14c4 4 32 4 36 0V22"/>
+        <path d="M60 19v18"/>
+        <circle cx="32" cy="44" r="3"/>
+        <path d="M32 47v6"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card learn-filters">
+    <div class="lf-row">
+      <div class="lf-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="learn-q" type="search" placeholder="Search topics — e.g. asthma, mask, children…">
+      </div>
+      <div class="lf-kind" id="learn-kind">
+        <button class="lf-pill active" data-kind="">All</button>
+        <button class="lf-pill" data-kind="article">Articles</button>
+        <button class="lf-pill" data-kind="video">Videos</button>
+        <button class="lf-pill" data-kind="quiz">Quizzes</button>
+        <button class="lf-pill" data-kind="infographic">Infographics</button>
+      </div>
+    </div>
+    <div class="lf-cats" id="learn-cats">
+      <button class="lf-cat active" data-cat="">Every category</button>
+    </div>
+  </div>
+
+  <!-- Grid of resources -->
+  <div class="learn-grid" id="learn-grid">
+    <div class="empty">Loading resources…</div>
+  </div>
+
+  <!-- Detail modal (article, video, quiz) -->
+  <div class="learn-modal-overlay" id="learn-modal-overlay" hidden>
+    <div class="learn-modal" role="dialog" aria-labelledby="learn-modal-title">
+      <div class="learn-modal-head">
+        <h3 id="learn-modal-title">—</h3>
+        <button class="learn-modal-close" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="learn-modal-body" id="learn-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Admin: add-a-resource modal (only opened when role=admin) -->
+  <div class="learn-modal-overlay learn-admin-overlay" id="learn-admin-overlay" hidden>
+    <div class="learn-modal learn-admin-modal" role="dialog" aria-labelledby="learn-admin-title">
+      <div class="learn-modal-head">
+        <h3 id="learn-admin-title">Add educational resource</h3>
+        <button class="learn-admin-close" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="learn-modal-body">
+        <form id="learn-admin-form" class="learn-admin-form" novalidate>
+          <div class="laf-row">
+            <label class="laf-field">
+              <span>Title <em>*</em></span>
+              <input type="text" name="title" required maxlength="200" placeholder="e.g. How to wear an FFP2 mask correctly">
+            </label>
+          </div>
+
+          <div class="laf-row laf-row-3">
+            <label class="laf-field">
+              <span>Type <em>*</em></span>
+              <select name="kind" required>
+                <option value="article">Article</option>
+                <option value="video">Video</option>
+                <option value="quiz">Quiz</option>
+                <option value="infographic">Infographic</option>
+              </select>
+            </label>
+            <label class="laf-field">
+              <span>Category <em>*</em></span>
+              <input type="text" name="category" required maxlength="60" placeholder="pollution, asthma, mask, children, first-aid…">
+            </label>
+            <label class="laf-field">
+              <span>Language</span>
+              <select name="language">
+                <option value="en">English</option>
+                <option value="fr">Français</option>
+                <option value="ar">العربية</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="laf-row">
+            <label class="laf-field">
+              <span>Summary</span>
+              <textarea name="summary" rows="2" maxlength="500" placeholder="1-3 sentences shown on the card"></textarea>
+            </label>
+          </div>
+
+          <div class="laf-row">
+            <label class="laf-field">
+              <span>Body <em class="laf-hint">(Markdown for articles · JSON quiz schema for quizzes)</em></span>
+              <textarea name="body" rows="8" placeholder="## Introduction&#10;&#10;Markdown content here. Use ## for headings, **bold**, lists with -."></textarea>
+            </label>
+          </div>
+
+          <div class="laf-row laf-row-2">
+            <label class="laf-field">
+              <span>Media URL <em class="laf-hint">(YouTube embed for videos · image URL for infographics)</em></span>
+              <input type="url" name="media_url" maxlength="500" placeholder="https://www.youtube.com/embed/…">
+            </label>
+            <label class="laf-field">
+              <span>Thumbnail URL</span>
+              <input type="url" name="thumbnail" maxlength="500" placeholder="https://…/preview.jpg">
+            </label>
+          </div>
+
+          <div class="laf-row laf-row-3">
+            <label class="laf-field">
+              <span>Duration (min)</span>
+              <input type="number" name="duration_min" min="0" max="300" placeholder="for video">
+            </label>
+            <label class="laf-field">
+              <span>Reading (min)</span>
+              <input type="number" name="reading_min" min="0" max="120" placeholder="for article">
+            </label>
+            <label class="laf-field">
+              <span>Level</span>
+              <select name="level">
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="laf-actions">
+            <span class="laf-status" id="learn-admin-status"></span>
+            <button type="button" class="btn ghost" id="learn-admin-cancel">Cancel</button>
+            <button type="submit" class="btn primary" id="learn-admin-submit">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              <span>Publish</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</section>

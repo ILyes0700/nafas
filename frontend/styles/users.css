@@ -1,0 +1,95 @@
+/* User Management page — additive styles, reuses admin/theme tokens. */
+.users-page { display:flex; flex-direction:column; gap:18px; }
+
+.um-toolbar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+.um-input {
+  padding:9px 12px; border:1px solid #e6e3da; border-radius:10px;
+  background:#f8f7f2; font-size:13px; color:#1f2937; outline:none;
+}
+.um-input:focus { border-color:#0d3b66; background:#fff; }
+#um-search { flex:1; min-width:200px; }
+
+.um-table-wrap { overflow-x:auto; }
+.um-table { width:100%; border-collapse:collapse; font-size:13px; }
+.um-table th, .um-table td { text-align:left; padding:11px 12px; border-bottom:1px solid #eef0ee; white-space:nowrap; }
+.um-table th { font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:#94a3b8; font-weight:700; }
+.um-table tbody tr:hover { background:#f8fafc; }
+.um-actions-col { text-align:right; }
+.um-row-actions { display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap; }
+
+.um-badge { display:inline-block; padding:3px 9px; border-radius:999px; font-size:11px; font-weight:600; }
+.um-badge.role-citizen { background:#eef3fa; color:#0d3b66; }
+.um-badge.role-health  { background:#dcfce7; color:#166534; }
+.um-badge.role-school  { background:#fef3c7; color:#92400e; }
+.um-badge.role-admin   { background:#e0e7ff; color:#3730a3; }
+.um-badge.role-super_admin { background:#0d3b66; color:#fff; }
+.um-badge.st-active    { background:#dcfce7; color:#166534; }
+.um-badge.st-pending   { background:#fef3c7; color:#92400e; }
+.um-badge.st-suspended { background:#fee2e2; color:#991b1b; }
+
+.um-mini { padding:5px 10px; font-size:12px; border-radius:8px; border:1px solid #e6e3da; background:#fff; cursor:pointer; font-weight:600; color:#0d3b66; }
+.um-mini:hover { background:#f1f5f9; }
+.um-mini.danger { color:#991b1b; border-color:#fecaca; }
+.um-mini.danger:hover { background:#fef2f2; }
+.um-mini.good { color:#166534; border-color:#bbf7d0; }
+.um-mini.good:hover { background:#f0fdf4; }
+.um-mini:disabled { opacity:.45; cursor:not-allowed; }
+
+/* Modal */
+.um-modal { position:fixed; inset:0; background:rgba(15,23,42,.45); display:flex; align-items:center; justify-content:center; z-index:1000; padding:16px; }
+.um-modal[hidden] { display:none; }
+.um-modal-card { background:#fff; border-radius:16px; width:100%; max-width:440px; box-shadow:0 20px 60px rgba(0,0,0,.25); overflow:hidden; }
+.um-modal-head { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid #eef0ee; }
+.um-modal-head h3 { margin:0; color:#0d3b66; font-size:16px; }
+.um-modal-x { background:none; border:none; font-size:24px; line-height:1; cursor:pointer; color:#94a3b8; }
+.um-modal-body { padding:20px; display:flex; flex-direction:column; gap:12px; }
+.um-modal-body label { font-size:12px; font-weight:600; color:#475569; display:block; margin-bottom:4px; }
+.um-modal-body input, .um-modal-body select { width:100%; padding:9px 12px; border:1px solid #e6e3da; border-radius:10px; background:#f8f7f2; font-size:13px; box-sizing:border-box; }
+.um-modal-body input:focus { border-color:#0d3b66; background:#fff; outline:none; }
+.um-modal-err { background:#fee2e2; color:#991b1b; padding:9px 12px; border-radius:9px; font-size:12.5px; }
+.um-modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:4px; }
+
+/* ============================================================
+   MODERN PRO LAYER (R177) — scoped to .users-page only
+   ============================================================ */
+.users-page .admin-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+.users-page .kpi-card{position:relative;background:#fff;border:1px solid #e8ecf3;border-radius:16px;
+  padding:18px 18px 16px;box-shadow:0 1px 2px rgba(15,23,42,.04),0 10px 26px rgba(15,23,42,.05);
+  overflow:hidden;transition:transform .18s ease,box-shadow .18s ease}
+.users-page .kpi-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;
+  background:linear-gradient(#2563eb,#4f46e5)}
+.users-page .kpi-card:hover{transform:translateY(-2px);
+  box-shadow:0 6px 16px rgba(15,23,42,.08),0 18px 40px rgba(15,23,42,.08)}
+.users-page .kpi-val{font-size:30px;font-weight:800;color:#0f172a;letter-spacing:-1px;line-height:1}
+.users-page .kpi-lbl{margin-top:7px;font-size:11.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px}
+
+/* card + toolbar */
+.users-page .card{border-radius:18px;border:1px solid #e8ecf3;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 10px 26px rgba(15,23,42,.05);padding:18px}
+.users-page .um-toolbar{gap:12px}
+.users-page .um-input{border-radius:12px;border:1px solid #e2e8f0;background:#f8fafc;
+  padding:11px 14px;font-size:13.5px;color:#0f172a;transition:border-color .15s,box-shadow .15s,background .15s}
+.users-page .um-input:focus{border-color:#2563eb;background:#fff;box-shadow:0 0 0 4px rgba(37,99,235,.12)}
+.users-page #um-search{min-width:240px}
+
+/* table */
+.users-page .um-table{border-collapse:separate;border-spacing:0}
+.users-page .um-table thead th{position:sticky;top:0;z-index:1;background:#f8fafc;
+  font-size:11px;letter-spacing:.5px;color:#64748b;padding:12px 14px;border-bottom:1px solid #e8ecf3}
+.users-page .um-table td{padding:13px 14px;border-bottom:1px solid #eef2f7;color:#1e293b}
+.users-page .um-table tbody tr{transition:background .14s}
+.users-page .um-table tbody tr:hover{background:#f1f5ff}
+.users-page .um-table tbody tr:last-child td{border-bottom:none}
+
+/* badges refined */
+.users-page .um-badge{padding:4px 11px;font-size:11px;font-weight:700;border-radius:999px}
+.users-page .um-badge.st-pending{background:#fff7ed;color:#c2410c;box-shadow:inset 0 0 0 1px #fed7aa}
+.users-page .um-badge.st-active{background:#f0fdf4;color:#15803d;box-shadow:inset 0 0 0 1px #bbf7d0}
+.users-page .um-badge.st-suspended{background:#fef2f2;color:#b91c1c;box-shadow:inset 0 0 0 1px #fecaca}
+
+/* action buttons */
+.users-page .um-mini{border-radius:10px;padding:6px 12px;font-weight:700;font-size:12px;
+  border:1px solid #e2e8f0;transition:transform .14s,box-shadow .14s,background .14s}
+.users-page .um-mini:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 3px 8px rgba(15,23,42,.1)}
+.users-page .um-mini.good{color:#15803d;border-color:#bbf7d0}
+.users-page .um-mini.danger{color:#b91c1c;border-color:#fecaca}

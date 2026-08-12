@@ -1,0 +1,47 @@
+<section class="page correlation-page" id="page-correlation">
+
+  <!-- HEADER UNIFIE -->
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 3v18h18"/>
+          <path d="M7 14l4-4 4 4 5-7"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Correlations · pollution ↔ symptoms</h1>
+        <div class="ph-sub">Automatic statistical analysis. The higher the |r| coefficient, the stronger the link.</div>
+      </div>
+    </div>
+    <div class="ph-actions">
+      <label class="ph-control">
+        <span class="muted small">Period</span>
+        <select id="corr-days">
+          <option value="14">14 days</option>
+          <option value="30" selected>30 days</option>
+          <option value="60">60 days</option>
+          <option value="90">90 days</option>
+        </select>
+      </label>
+      <button class="btn ghost" id="corr-refresh" type="button">Refresh</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Ranking by correlation strength</h3>
+    <p class="muted small">Zones are ranked from strongest to weakest link. Click on a zone to see details.</p>
+    <div id="corr-zones-list" class="corr-zones-list">
+      <p class="muted">Loading…</p>
+    </div>
+  </div>
+
+  <div class="card" id="corr-detail-card" hidden>
+    <h3 id="corr-detail-title">Details</h3>
+    <p id="corr-detail-trend" class="corr-trend"></p>
+    <div class="chart-wrap chart-wrap-md">
+      <canvas id="corr-detail-chart"></canvas>
+    </div>
+    <p class="muted small" id="corr-detail-stats"></p>
+  </div>
+</section>

@@ -1,0 +1,283 @@
+/* ============================================================
+   ALERTES — style "inbox pro" (liste compacte, palette navy uniquement)
+   ============================================================ */
+
+.alerts-page { display: flex; flex-direction: column; gap: 14px; }
+
+/* ----- HEADER COMPACT ----- */
+.alerts-head {
+  background: #fff;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.alerts-head .ah-title-block {
+  display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;
+}
+.alerts-head .ah-icon {
+  width: 44px; height: 44px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, #0d3b66 0%, #1d4f87 100%);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.alerts-head .ah-icon svg { width: 22px; height: 22px; }
+.alerts-head h1 {
+  font-size: 18px; font-weight: 800; color: #0f172a;
+  margin: 0; line-height: 1.2;
+}
+.alerts-head .ah-sub {
+  font-size: 12px; color: #94a3b8; margin-top: 2px;
+}
+
+/* Mini-pills sévérité (inline, dans le header) */
+.alerts-head .ah-pills {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  margin-left: auto;
+}
+.alerts-head .ah-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 999px;
+  background: #f9fafb; border: 1px solid var(--border, #e5e7eb);
+  font-size: 12px; font-weight: 600; color: #475569;
+  cursor: pointer; transition: background .12s, border-color .12s, transform .12s;
+}
+.alerts-head .ah-pill:hover { background: #f1f5f9; transform: translateY(-1px); }
+.alerts-head .ah-pill.active { border-color: #0d3b66; background: #fff; }
+.alerts-head .ah-pill .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.alerts-head .ah-pill .num { font-weight: 800; color: #0f172a; }
+.alerts-head .ah-pill[data-sev="critical"] .dot { background: #991b1b; }
+.alerts-head .ah-pill[data-sev="danger"]   .dot { background: #dc2626; }
+.alerts-head .ah-pill[data-sev="warning"]  .dot { background: #d97706; }
+.alerts-head .ah-pill[data-sev="info"]     .dot { background: #0d3b66; }
+.alerts-head .ah-pill[data-sev="critical"].active { background: #fee2e2; border-color: #991b1b; }
+.alerts-head .ah-pill[data-sev="danger"].active   { background: #fef2f2; border-color: #dc2626; }
+.alerts-head .ah-pill[data-sev="warning"].active  { background: #fef3c7; border-color: #d97706; }
+.alerts-head .ah-pill[data-sev="info"].active     { background: #dbeafe; border-color: #0d3b66; }
+
+/* ----- BARRE OUTILS ----- */
+.alerts-toolbar {
+  background: #fff;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 14px;
+  padding: 10px 14px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.alerts-toolbar .at-left {
+  display: flex; align-items: center; gap: 8px; flex: 1; min-width: 240px;
+}
+.alerts-toolbar .at-search {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  background: #f9fafb;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  flex: 1;
+}
+.alerts-toolbar .at-search:focus-within { border-color: #0d3b66; background: #fff; box-shadow: 0 0 0 3px rgba(13,59,102,0.10); }
+.alerts-toolbar .at-search svg { width: 14px; height: 14px; color: #94a3b8; flex-shrink: 0; }
+.alerts-toolbar .at-search input {
+  border: none; outline: none; background: transparent;
+  font-size: 13px; color: #0f172a; flex: 1;
+}
+.alerts-toolbar .at-chips { display: flex; gap: 4px; flex-wrap: wrap; }
+.alerts-toolbar .at-chip {
+  font-size: 12px; font-weight: 600;
+  padding: 6px 12px; border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #64748b; cursor: pointer;
+  transition: background .12s, color .12s;
+}
+.alerts-toolbar .at-chip:hover { background: #f1f5f9; color: #0f172a; }
+.alerts-toolbar .at-chip.active { background: #0d3b66; color: #fff; }
+.alerts-toolbar .at-info {
+  font-size: 12px; color: #94a3b8;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.alerts-toolbar .at-info svg { width: 12px; height: 12px; }
+
+/* ----- LISTE / INBOX ----- */
+.alerts-inbox {
+  background: #fff;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* En-tête de groupe (date) */
+.alerts-group-head {
+  background: #f9fafb;
+  border-top: 1px solid var(--border, #e5e7eb);
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  padding: 8px 18px;
+  font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  color: #64748b;
+  display: flex; align-items: center; gap: 8px;
+}
+.alerts-group-head:first-child { border-top: none; }
+.alerts-group-head .gh-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 18px; padding: 0 7px;
+  border-radius: 999px;
+  background: #e5e7eb; color: #475569;
+  font-size: 10px; font-weight: 700; letter-spacing: 0;
+}
+
+/* Ligne d'alerte */
+.alerts-row {
+  display: grid;
+  grid-template-columns: 4px 56px 22px 1fr 200px 90px 22px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: background .12s;
+  position: relative;
+}
+.alerts-row:hover { background: #fafafa; }
+.alerts-row:last-child { border-bottom: none; }
+
+/* Bande sévérité (colonne 1, 4 px) */
+.alerts-row .ar-bar {
+  width: 4px; height: 36px; border-radius: 0 4px 4px 0;
+  background: #0d3b66;
+}
+.alerts-row.critical .ar-bar { background: #991b1b; }
+.alerts-row.danger   .ar-bar { background: #dc2626; }
+.alerts-row.warning  .ar-bar { background: #d97706; }
+.alerts-row.info     .ar-bar { background: #0d3b66; }
+
+/* Heure (col 2) */
+.alerts-row .ar-time {
+  font-size: 12px; font-weight: 700; color: #475569;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Icône sévérité (col 3) */
+.alerts-row .ar-sev-ico {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: #f1f5f9; color: #0d3b66;
+  display: flex; align-items: center; justify-content: center;
+}
+.alerts-row .ar-sev-ico svg { width: 12px; height: 12px; }
+.alerts-row.critical .ar-sev-ico { background: #fee2e2; color: #991b1b; }
+.alerts-row.danger   .ar-sev-ico { background: #fef2f2; color: #dc2626; }
+.alerts-row.warning  .ar-sev-ico { background: #fef3c7; color: #92400e; }
+.alerts-row.info     .ar-sev-ico { background: #dbeafe; color: #0d3b66; }
+
+/* Titre + preview (col 4) */
+.alerts-row .ar-body { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.alerts-row .ar-title {
+  font-size: 13.5px; font-weight: 600; color: #0f172a;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.alerts-row .ar-preview {
+  font-size: 12px; color: #94a3b8;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* Zone (col 5) */
+.alerts-row .ar-zone {
+  font-size: 12px; color: #475569;
+  display: inline-flex; align-items: center; gap: 5px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.alerts-row .ar-zone svg { width: 12px; height: 12px; color: #94a3b8; flex-shrink: 0; }
+
+/* Pill sévérité (col 6) */
+.alerts-row .ar-pill {
+  justify-self: end;
+  font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em;
+  padding: 3px 9px; border-radius: 999px;
+  background: #f1f5f9; color: #0d3b66;
+}
+.alerts-row.critical .ar-pill { background: #fee2e2; color: #991b1b; }
+.alerts-row.danger   .ar-pill { background: #fef2f2; color: #dc2626; }
+.alerts-row.warning  .ar-pill { background: #fef3c7; color: #92400e; }
+.alerts-row.info     .ar-pill { background: #dbeafe; color: #0d3b66; }
+
+/* Chevron (col 7) */
+.alerts-row .ar-chev {
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  color: #cbd5e1;
+  transition: transform .2s, color .12s;
+}
+.alerts-row .ar-chev svg { width: 16px; height: 16px; }
+.alerts-row:hover .ar-chev { color: #0d3b66; }
+.alerts-row.expanded .ar-chev { transform: rotate(90deg); color: #0d3b66; }
+
+/* Détail expandable */
+.alerts-detail {
+  display: none;
+  padding: 16px 80px 18px 92px;
+  background: #f9fafb;
+  border-bottom: 1px solid #f1f5f9;
+  border-top: 1px solid #f1f5f9;
+}
+.alerts-row.expanded + .alerts-detail { display: block; }
+
+.alerts-detail .ad-msg {
+  font-size: 13.5px; color: #334155; line-height: 1.6;
+  margin-bottom: 12px;
+}
+.alerts-detail .ad-meta {
+  display: flex; gap: 14px; flex-wrap: wrap;
+  font-size: 12px; color: #64748b;
+  margin-bottom: 14px; padding-bottom: 10px;
+  border-bottom: 1px dashed #e5e7eb;
+}
+.alerts-detail .ad-meta-item {
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.alerts-detail .ad-meta-item svg { width: 13px; height: 13px; color: #94a3b8; }
+.alerts-detail .ad-meta-item strong { color: #0f172a; font-weight: 600; }
+
+.alerts-detail .ad-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.alerts-detail .ad-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 13px; border-radius: 8px;
+  background: #fff;
+  border: 1px solid var(--border, #e5e7eb);
+  font-size: 12.5px; font-weight: 600; color: #0f172a;
+  cursor: pointer;
+  transition: background .12s, border-color .12s, color .12s;
+}
+.alerts-detail .ad-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
+.alerts-detail .ad-btn.primary { background: #0d3b66; color: #fff; border-color: #0d3b66; }
+.alerts-detail .ad-btn.primary:hover { background: #0a2e52; border-color: #0a2e52; }
+.alerts-detail .ad-btn svg { width: 13px; height: 13px; }
+
+/* ----- ÉTAT VIDE ----- */
+.alerts-empty {
+  text-align: center;
+  padding: 60px 20px;
+  background: #fff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+  color: #94a3b8;
+}
+.alerts-empty .e-icon {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-bottom: 12px;
+}
+.alerts-empty .e-icon svg { width: 36px; height: 36px; color: #94a3b8; }
+.alerts-empty h3 { color: #475569; font-size: 16px; margin: 6px 0 4px; }
+.alerts-empty p  { font-size: 13px; margin: 0; max-width: 360px; margin: 0 auto; }
+
+/* ----- RESPONSIVE ----- */
+@media (max-width: 900px) {
+  .alerts-row { grid-template-columns: 4px 50px 22px 1fr 70px 18px; padding-right: 12px; }
+  .alerts-row .ar-zone { display: none; }
+  .alerts-detail { padding: 14px 16px 16px 76px; }
+  .alerts-head .ah-pills { width: 100%; margin-left: 0; }
+}

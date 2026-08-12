@@ -1,0 +1,122 @@
+/* ==========================================================
+   Sidebar — fixe, élégante, institutionnelle
+   Icônes SVG style Lucide, héritent currentColor du nav
+   ========================================================== */
+
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 22px 14px;
+  position: sticky; top: 0;
+  height: 100vh;
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+}
+
+.brand {
+  display: flex; align-items: center; gap: 12px;
+  padding: 4px 8px 16px;
+  border-bottom: 1px solid var(--border-2);
+}
+/* Logo : utilise l'image PNG (logo5). La lettre ن reste dans le DOM
+   pour fallback / accessibilité mais est masquée visuellement. */
+.brand .logo {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: url('../assets/logo.png') center/contain no-repeat;
+  color: transparent;
+  font-size: 0;
+  box-shadow: 0 4px 12px rgba(13,59,102,.18);
+  flex-shrink: 0;
+}
+.brand .name { font-weight: 700; color: var(--primary); font-size: 15px; }
+.brand .slogan { font-size: 11px; color: var(--muted); }
+
+.status-card {
+  margin: 16px 4px 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+  border: 1px solid var(--border-2);
+}
+.status-card .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.status-card .val { display: flex; align-items: center; gap: 8px; margin-top: 4px; font-weight: 700; }
+.status-card .meta { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; color: var(--muted); }
+
+/* ---------- NAV ---------- */
+.nav { margin-top: 6px; display: flex; flex-direction: column; gap: 2px; }
+
+.nav a {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  color: #475569;
+  font-weight: 500; font-size: 13.5px;
+  position: relative;
+  transition: background .15s, color .15s, transform .15s;
+}
+.nav a:hover {
+  background: var(--bg-soft);
+  color: var(--primary);
+}
+.nav a.active {
+  background: var(--primary-3, rgba(13, 59, 102, 0.08));
+  color: var(--primary);
+  font-weight: 600;
+}
+.nav a.active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 8px; bottom: 8px;
+  width: 3px;
+  border-radius: 0 4px 4px 0;
+  background: var(--primary);
+}
+
+/* ---------- ICÔNES SVG ---------- */
+.nav a .ico {
+  width: 20px; height: 20px;
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  color: #94a3b8;                          /* gris doux au repos */
+  transition: color .15s, transform .15s;
+}
+.nav a .ico svg {
+  width: 18px; height: 18px;
+  display: block;
+}
+.nav a:hover .ico,
+.nav a.active .ico {
+  color: var(--primary);                   /* bleu institutionnel */
+}
+.nav a:hover .ico { transform: scale(1.05); }
+
+.nav a .lbl { flex: 1; }
+
+.nav a .badge {
+  margin-left: auto;
+  background: var(--danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+
+.nav .nav-logout {
+  margin-top: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-2);
+  color: #94a3b8;
+}
+.nav .nav-logout:hover { color: var(--danger); background: rgba(220, 38, 38, 0.05); }
+.nav .nav-logout:hover .ico { color: var(--danger); }
+
+/* ---------- FOOT ---------- */
+.sidebar-foot {
+  margin-top: auto; padding: 14px 8px 6px;
+  font-size: 11px; color: var(--muted);
+  border-top: 1px solid var(--border-2);
+}
+.sidebar-foot .row { justify-content: space-between; }
+.online-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--safe); display: inline-block; margin-right: 6px; }

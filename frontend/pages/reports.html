@@ -1,0 +1,143 @@
+<section class="reports-page">
+
+  <!-- HÉRO -->
+  <div class="reports-hero">
+    <div class="rh-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+        <path d="M14 2v6h6"/>
+        <line x1="9" y1="13" x2="15" y2="13"/>
+        <line x1="9" y1="17" x2="13" y2="17"/>
+      </svg>
+    </div>
+    <div>
+      <h1 class="rh-title">Reports Center</h1>
+      <p class="rh-sub">Generate, preview and print environmental & health reports for Gabès.</p>
+    </div>
+    <div class="rh-meta">
+      Last Updated<br>
+      <b id="rh-now">—</b>
+    </div>
+  </div>
+
+  <!-- STATS RAPIDES -->
+  <div id="reports-stats" class="reports-stats"></div>
+
+  <!-- 3 CARDS DE RAPPORTS -->
+  <div class="reports-grid">
+    <div class="rep-card daily" data-period="daily">
+      <div class="rc-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+          <circle cx="12" cy="16" r="2.5" fill="currentColor"/>
+        </svg>
+      </div>
+      <h3 class="rc-title">Daily Report</h3>
+      <p class="rc-desc">Today's Summary: Air Quality, 24h Alerts, Citizen Reports, and Symptoms by Zone.</p>
+      <div class="rc-actions">
+        <button class="btn primary" data-rep-action="preview" data-period="daily">
+          <svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Preview
+        </button>
+        <button class="btn outline" data-rep-action="open" data-period="daily">
+          <svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Open
+        </button>
+      </div>
+    </div>
+
+    <div class="rep-card weekly" data-period="weekly">
+      <div class="rc-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+          <path d="M7 14h2M11 14h2M15 14h2M7 18h2M11 18h2"/>
+        </svg>
+      </div>
+      <h3 class="rc-title">Weekly Report</h3>
+      <p class="rc-desc">7-Day View: Pollution Trends, Symptom Evolution, Zone Comparison.</p>
+      <div class="rc-actions">
+        <button class="btn primary" data-rep-action="preview" data-period="weekly">
+          <svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Preview
+        </button>
+        <button class="btn outline" data-rep-action="open" data-period="weekly">
+          <svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Open
+        </button>
+      </div>
+    </div>
+
+    <div class="rep-card monthly" data-period="monthly">
+      <div class="rc-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"/>
+          <line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6"  y1="20" x2="6"  y2="14"/>
+          <line x1="3"  y1="20" x2="21" y2="20"/>
+        </svg>
+      </div>
+      <h3 class="rc-title">Monthly Summary</h3>
+      <p class="rc-desc">Complete Overview: Decisions Made, Critical Alerts, School Status, Recommendations.</p>
+      <div class="rc-actions">
+        <button class="btn primary" data-rep-action="preview" data-period="monthly">
+          <svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Preview
+        </button>
+        <button class="btn outline" data-rep-action="open" data-period="monthly">
+          <svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Open
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- APERÇU IFRAME -->
+  <div id="report-preview" class="report-preview">
+    <div class="report-preview-bar">
+      <span class="rpb-title" id="rpb-title">Preview</span>
+      <span class="rpb-spacer"></span>
+      <button class="btn primary" id="rep-print" title="Print / Save as PDF">
+        <svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Print / PDF
+      </button>
+      <button class="btn outline" id="rep-download" title="Download as HTML">
+        <svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download
+      </button>
+      <button class="btn outline" id="rep-close" title="Close preview"><svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <iframe id="report-iframe" src="about:blank" title="Report Preview"></iframe>
+  </div>
+
+  <!-- TABLE ZONES -->
+  <div class="card">
+    <h3 style="margin:0 0 14px">Zones Overview (by Pollution)</h3>
+    <div style="overflow-x:auto">
+      <table class="reports-table">
+        <thead>
+          <tr>
+            <th>Zone</th><th>Status</th><th>Pollution</th><th>Risk Score</th><th>Population</th>
+          </tr>
+        </thead>
+        <tbody id="reports-zones-body">
+          <tr><td colspan="5" class="reports-empty">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- HISTORIQUE -->
+  <div class="card">
+    <h3 style="margin:0 0 14px">Recently Generated Reports</h3>
+    <div id="reports-history">
+      <div class="reports-empty">No reports generated yet.</div>
+    </div>
+  </div>
+
+</section>

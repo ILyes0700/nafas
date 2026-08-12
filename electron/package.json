@@ -1,0 +1,63 @@
+{
+  "name": "nafass",
+  "productName": "Nafass",
+  "version": "1.0.0",
+  "description": "Nafass — نَفَس · Surveillance santé & qualité de l'air à Gabès (Electron + PHP + MySQL).",
+  "main": "main.js",
+  "author": "Nafass Team — ISIMG 2025-2026",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --enable-logging",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.nafass.gabes",
+    "productName": "Nafass",
+    "artifactName": "Nafass-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "fallback.html",
+      "package.json",
+      "build/**/*"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Nafass"
+    },
+    "mac": {
+      "icon": "build/icon.icns",
+      "category": "public.app-category.healthcare-fitness",
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] }
+      ]
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "category": "Utility",
+      "target": ["AppImage", "deb"]
+    }
+  }
+}

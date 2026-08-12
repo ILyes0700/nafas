@@ -1,0 +1,128 @@
+<section class="pf2" id="pf-root">
+
+  <!-- ======== COVER + HEADER ======== -->
+  <div class="pf2-cover-card">
+    <div class="pf2-cover" id="pf-cover"></div>
+    <button class="pf2-cover-btn" id="pf-cover-btn" type="button"><svg class="pf2-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Edit cover</span></button>
+    <input type="file" id="pf-cover-input" accept="image/*" hidden>
+
+    <div class="pf2-head">
+      <div class="pf2-avatar-wrap">
+        <div class="pf2-avatar lg" id="pf-avatar"><span id="pf-avatar-fallback">?</span></div>
+        <button class="pf2-avatar-btn" id="pf-avatar-btn" type="button" title="Change photo"><svg class="pf2-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
+        <input type="file" id="pf-avatar-input" accept="image/*" hidden>
+      </div>
+
+      <div class="pf2-head-main">
+        <h1 id="pf-name">—</h1>
+        <div class="pf2-username" id="pf-username">@—</div>
+        <div class="pf2-bio-line" id="pf-bio-line"></div>
+        <div class="pf2-meta" id="pf-meta"></div>
+        <div class="pf2-stats">
+          <div class="pf2-stat"><b id="pf-stat-posts">0</b><span>Posts</span></div>
+          <div class="pf2-stat"><b id="pf-stat-followers">0</b><span>Followers</span></div>
+          <div class="pf2-stat"><b id="pf-stat-following">0</b><span>Following</span></div>
+        </div>
+      </div>
+
+      <div class="pf2-actions">
+        <button class="btn primary" id="pf-edit-btn" type="button"><svg class="pf2-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Edit Profile</span></button>
+        <button class="btn" id="pf-saved-btn" type="button"><svg class="pf2-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><span>Saved</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== BODY: SIDEBAR + FEED ======== -->
+  <div class="pf2-body">
+
+    <aside class="pf2-side">
+      <div class="pf2-panel">
+        <h3>Intro</h3>
+        <ul class="pf2-about" id="pf-about"><li class="muted">—</li></ul>
+      </div>
+
+      <!-- ======== FRIENDS ZONE (Facebook-style) ======== -->
+      <div class="pf2-panel pf2-friends-panel">
+        <div class="pf2-panel-head pf2-friends-head">
+          <h3>Friends <span class="pf2-fcount" id="pf-friends-count"></span></h3>
+        </div>
+        <div class="pf2-ftabs" id="pf-friends-tabs">
+          <button class="pf2-ftab active" data-ftab="friends" type="button">Friends <b id="pf-ft-friends">0</b></button>
+          <button class="pf2-ftab" data-ftab="followers" type="button">Followers <b id="pf-ft-followers">0</b></button>
+          <button class="pf2-ftab" data-ftab="following" type="button">Following <b id="pf-ft-following">0</b></button>
+        </div>
+        <div class="pf2-friends-grid" id="pf-friends-grid"><div class="empty">Loading…</div></div>
+      </div>
+
+      <div class="pf2-panel">
+        <div class="pf2-panel-head"><h3>Photos</h3></div>
+        <div class="pf2-photos" id="pf-photos"><div class="empty">No photos yet</div></div>
+      </div>
+
+      <div class="pf2-panel">
+        <div class="pf2-panel-head">
+          <h3>Files</h3>
+          <button class="pf2-mini" id="pf-upload-btn" type="button">Upload</button>
+          <input type="file" id="pf-file-input" hidden>
+        </div>
+        <div class="pf2-files" id="pf-files"><div class="empty">No files yet</div></div>
+      </div>
+    </aside>
+
+    <main class="pf2-main">
+
+      <!-- COMPOSER -->
+      <div class="pf2-panel pf2-composer" id="pf-composer">
+        <div class="pf2-composer-top">
+          <div class="pf2-avatar sm" id="pf-composer-avatar"><span>?</span></div>
+          <textarea id="pf-post-body" placeholder="What's on your mind?" maxlength="5000"></textarea>
+        </div>
+        <div class="pf2-preview" id="pf-post-preview" hidden></div>
+        <div class="pf2-composer-bar">
+          <button class="pf2-tool" id="pf-post-media-btn" type="button"><svg class="pf2-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span>Photo / Video</span></button>
+          <button class="pf2-tool" id="pf-post-doc-btn" type="button"><svg class="pf2-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5l-8.6 8.6a5 5 0 0 1-7.1-7.1l8.6-8.6a3.3 3.3 0 0 1 4.7 4.7L9.6 17.4a1.7 1.7 0 0 1-2.4-2.4l7.9-7.9"/></svg><span>File</span></button>
+          <input type="file" id="pf-post-media" accept="image/*,video/*" hidden>
+          <input type="file" id="pf-post-doc" hidden>
+          <span class="pf2-post-err" id="pf-post-err"></span>
+          <button class="btn primary" id="pf-post-btn" type="button">Post</button>
+        </div>
+        <div class="pf2-drop-hint" id="pf-drop-hint">Drop your file to attach it</div>
+      </div>
+
+      <!-- FEED -->
+      <div class="pf2-feed" id="pf-feed"><div class="empty">Loading…</div></div>
+      <div class="pf2-spinner" id="pf-feed-spinner" hidden><span></span><span></span><span></span></div>
+      <div id="pf-feed-sentinel" style="height:1px"></div>
+    </main>
+  </div>
+
+  <!-- ======== EDIT PROFILE MODAL ======== -->
+  <div class="pf2-modal" id="pf-edit-modal" hidden>
+    <div class="pf2-modal-backdrop" id="pf-edit-backdrop"></div>
+    <div class="pf2-modal-card">
+      <div class="pf2-modal-head"><h3>Edit Profile</h3><button class="pf2-x" id="pf-edit-close" type="button"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+      <div class="pf2-modal-body">
+        <div class="pf-err" id="pf-err" style="display:none"></div>
+        <div class="pf2-grid2">
+          <div class="pf-field"><label>First name</label><input id="pf-first" type="text"></div>
+          <div class="pf-field"><label>Last name</label><input id="pf-last" type="text"></div>
+          <div class="pf-field"><label>Phone</label><input id="pf-phone" type="tel"></div>
+          <div class="pf-field"><label>Age</label><input id="pf-age" type="number" min="1" max="120"></div>
+          <div class="pf-field"><label>City</label><input id="pf-city" type="text"></div>
+          <div class="pf-field"><label>Country</label><input id="pf-country" type="text"></div>
+          <div class="pf-field"><label>Language</label>
+            <select id="pf-language"><option value="">—</option><option value="ar">العربية</option><option value="fr">Français</option><option value="en">English</option></select>
+          </div>
+          <div class="pf-field"><label>Email <small>(read-only here)</small></label><input id="pf-email-ro" type="email" disabled></div>
+        </div>
+        <div class="pf-field"><label>About me</label><textarea id="pf-bio" rows="4" placeholder="A short bio…"></textarea></div>
+        <p class="pf2-note">To change your email or verify your phone by code, use Account Settings (secured with OTP).</p>
+      </div>
+      <div class="pf2-modal-foot">
+        <button class="btn ghost" id="pf-edit-cancel" type="button">Cancel</button>
+        <button class="btn primary" id="pf-save" type="button">Save changes</button>
+      </div>
+    </div>
+  </div>
+
+</section>

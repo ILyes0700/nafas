@@ -1,0 +1,26 @@
+<section class="page sci-page mr-page" id="page-model-registry">
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2"/><rect x="3" y="7" width="18" height="5" rx="1"/><rect x="3" y="14" width="18" height="5" rx="1"/><path d="M7 9.5h.01M7 16.5h.01"/></svg>
+      </div>
+      <div>
+        <h1>Model Registry &amp; A/B Testing</h1>
+        <div class="ph-sub">Traçabilité des versions de modèles et bascule automatique sur drift. Lecture seule — l'entraînement se fait via <code>train_all.py</code>.</div>
+      </div>
+    </div>
+    <div class="ph-actions"><span class="pill info">Scientific ML — Admin</span></div>
+  </div>
+
+  <div class="card">
+    <div class="sci-tabs">
+      <button class="btn" id="mr-tab-versions">Versions</button>
+      <button class="btn ghost" id="mr-tab-ab">A/B Test Runs</button>
+      <span class="hint" id="mr-hint">Chargement…</span>
+    </div>
+    <table class="sci-table" id="mr-table">
+      <thead><tr id="mr-head"></tr></thead>
+      <tbody id="mr-body"><tr><td class="muted">Chargement…</td></tr></tbody>
+    </table>
+  </div>
+</section>

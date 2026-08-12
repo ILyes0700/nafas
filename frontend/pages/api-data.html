@@ -1,0 +1,63 @@
+<!-- PART 0 — Données de pollution en temps réel (fusion multi-API) -->
+<style>
+  .apid-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:14px; }
+  @media (max-width: 900px){ .apid-grid{ grid-template-columns:1fr; } }
+  .apid-col { background:var(--card,#fff); border:1px solid #e5e7eb; border-radius:14px; overflow:hidden; }
+  .apid-col h3 { margin:0; padding:12px 14px; font-size:14px; display:flex; justify-content:space-between; align-items:center; color:#fff; }
+  .apid-col.primary h3 { background:#0d3b66; }
+  .apid-col.iqair h3 { background:#0e7490; }
+  .apid-col.waqi h3 { background:#6d28d9; }
+  .apid-col .body { padding:12px 14px; }
+  .apid-row { display:flex; justify-content:space-between; padding:4px 0; font-size:13px; border-bottom:1px dashed #eef0f3; }
+  .apid-row span:first-child { color:#6b7280; }
+  .apid-row b { color:#111827; }
+  .apid-sec { margin-top:8px; font-size:11px; font-weight:700; letter-spacing:.04em; color:#9ca3af; text-transform:uppercase; }
+  .apid-fused { display:flex; gap:18px; align-items:center; flex-wrap:wrap; padding:18px; border-radius:16px; color:#fff; }
+  .apid-aqi-big { font-size:54px; font-weight:800; line-height:1; }
+  .apid-badge { padding:4px 12px; border-radius:999px; background:rgba(255,255,255,.25); font-weight:700; font-size:13px; }
+  .apid-src-ind { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+  .apid-src-ind .chip { background:rgba(255,255,255,.18); padding:3px 9px; border-radius:8px; font-size:12px; }
+  .apid-charts { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:16px; }
+  @media (max-width: 900px){ .apid-charts{ grid-template-columns:1fr; } }
+  .apid-chart-card { background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:12px; }
+  .apid-chart-card h4 { margin:0 0 8px; font-size:13px; color:#374151; }
+  .apid-bad { color:#dc2626; } .apid-ok { color:#16a34a; }
+  .apid-toolbar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .apid-toolbar select { padding:8px 10px; border-radius:10px; border:1px solid #d1d5db; font-size:14px; }
+</style>
+ 
+<section class="page">
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 14a8 8 0 0 1 16 0"/><path d="M12 14v7"/><circle cx="12" cy="3.5" r="1.5"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Données de Pollution en Temps Réel — قابس</h1>
+        <div class="ph-sub">Fusion intelligente · AccuWeather (75%) · WAQI (15%) · IQAir (10%)</div>
+      </div>
+    </div>
+    <div class="ph-actions apid-toolbar">
+      <select id="apid-city"></select>
+      <button type="button" class="mtc-btn" id="apid-refresh" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:10px;background:#fff;cursor:pointer">Actualiser</button>
+    </div>
+  </div>
+ 
+  <div id="apid-meta" class="muted" style="font-size:12px;margin:4px 2px 0">—</div>
+ 
+  <!-- Bloc résultat fusionné -->
+  <div id="apid-fused-wrap" style="margin-top:12px"></div>
+ 
+  <!-- 3 colonnes API -->
+  <div class="apid-grid" id="apid-cols"></div>
+ 
+  <!-- Graphiques -->
+  <div class="apid-charts">
+    <div class="apid-chart-card"><h4>Comparaison AQI des 3 API (limite OMS = 100)</h4><canvas id="apid-chart-aqi" height="190"></canvas></div>
+    <div class="apid-chart-card"><h4>Polluants AccuWeather vs limites OMS</h4><canvas id="apid-chart-poll" height="190"></canvas></div>
+    <div class="apid-chart-card"><h4>Prévision AQI 12h (AccuWeather)</h4><canvas id="apid-chart-fc" height="190"></canvas></div>
+    <div class="apid-chart-card"><h4>Historique AQI fusionné</h4><canvas id="apid-chart-hist" height="190"></canvas></div>
+  </div>
+</section>

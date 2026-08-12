@@ -1,0 +1,225 @@
+<section class="dash-page">
+
+  <!-- ROLE BAR -->
+  <div class="role-bar">
+    <span class="rb-left">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+      <span data-role-only="citizen">Citizen View — Air Quality, Reports, Symptoms</span>
+      <span data-role-only="health">Health Authority View — Decisions, Statistics, Reports</span>
+      <span data-role-only="school">School Director View — Monitoring, Guidelines, Parents</span>
+      <span data-role-only="admin">Administrator View — Global Management</span>
+    </span>
+    <span class="muted" style="font-weight:400">Mode local · WAMP · MySQL</span>
+  </div>
+ <div class="dash-hero">
+    <div class="dh-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/>
+        <rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>
+      </svg>
+    </div>
+    <div>
+      <h1 class="dh-title">Nafass — Health & Air Monitoring</h1>
+      <p class="dh-sub">Health surveillance & air quality in Gabès — Intelligent Alert System</p>
+    </div>
+    <div class="dh-actions">
+      <button class="btn" onclick="window.location.hash='#/reports'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+        Reports
+      </button>
+      <button class="btn primary" onclick="window.location.hash='#/citizen-reports'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-7-3 18-6-7-9-4z"/></svg>
+        Report an Issue
+      </button>
+    </div>
+  </div>
+  <!-- C12 — daily health tip (all roles) — visible by default, fallback integrated -->
+  <div class="dash-tip" id="dash-tip">
+    <div class="dash-tip-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 00-4 12.7c.6.5 1 1.2 1 2v.3h6v-.3c0-.8.4-1.5 1-2A7 7 0 0012 2z"/></svg>
+    </div>
+    <div class="dash-tip-body">
+      <div class="dash-tip-title">Daily Health Tip <span class="badge" id="dash-tip-tag">AI</span></div>
+      <p id="dash-tip-text">Stay hydrated and close windows during peak pollution hours. Prefer early morning walks when air quality is good.</p>
+    </div>
+  </div>
+
+  <!-- AUTO AI RECOMMENDATION — AI model + Fuzzy Type-2 (all roles) -->
+  <div class="dash-ai-reco" id="dash-ai-reco" hidden>
+    <div class="dar-head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 00-4 12.7c.6.5 1 1.2 1 2v.3h6v-.3c0-.8.4-1.5 1-2A7 7 0 0012 2z"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+      <strong>Automatic Recommendation</strong>
+      <span class="badge dar-model" id="dar-model">AI</span>
+      <span class="pill dar-risk" id="dar-risk">—</span>
+    </div>
+    <p class="dar-text" id="dar-text">Computing from AI model + Fuzzy Type-2…</p>
+    <ul class="dar-actions" id="dar-actions"></ul>
+    <div class="dar-meta" id="dar-meta"></div>
+  </div>
+
+  <!-- C9 — personalized recommendation (citizens only) -->
+  <div class="dash-reco" id="dash-reco" hidden>
+    <div class="dash-reco-head">
+      <span class="badge dash-reco-badge" id="dash-reco-risk">low</span>
+      <strong>Personalized Recommendation</strong>
+    </div>
+    <p id="dash-reco-text">Loading…</p>
+  </div>
+
+  <!-- H1 v2 — Telemedicine consultation queue (health/admin only) -->
+  <div class="dash-telemed-queue" id="dash-telemed-queue" hidden>
+    <div class="dtq-head">
+      <div class="dtq-title">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+        </svg>
+        <strong>Pending Telemedicine Requests</strong>
+      </div>
+      <span class="dtq-count" id="dash-telemed-count">0</span>
+    </div>
+    <ul class="dtq-list" id="dash-telemed-list"></ul>
+    <p class="muted small dtq-empty" id="dash-telemed-empty">No pending requests.</p>
+  </div>
+
+  <!-- HÉRO -->
+ 
+
+  <!-- KPI CARDS (4) -->
+  <div class="dash-kpis">
+    <div class="kpi" id="kpi-risk">
+      <div class="kpi-head">
+        <div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+        <span class="kpi-lbl">Risk Score</span>
+      </div>
+      <div class="kpi-val" id="dash-avg">—</div>
+      <div class="kpi-bar"><span id="dash-avg-bar" style="width:0%"></span></div>
+      <div class="kpi-hint">Out of 100 — Real-time</div>
+    </div>
+
+    <div class="kpi" id="kpi-status">
+      <div class="kpi-head">
+        <div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12c2 0 3-1 5-1s3 1 5 1 3-1 5-1 3 1 5 1"/><path d="M3 17c2 0 3-1 5-1s3 1 5 1 3-1 5-1 3 1 5 1"/><path d="M3 7c2 0 3-1 5-1s3 1 5 1 3-1 5-1 3 1 5 1"/></svg></div>
+        <span class="kpi-lbl">Air Quality</span>
+      </div>
+      <div class="kpi-val" id="dash-status">—</div>
+      <div class="kpi-hint" id="dash-status-hint">—</div>
+    </div>
+
+    <div class="kpi danger" id="kpi-alerts">
+      <div class="kpi-head">
+        <div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 003.4 0"/></svg></div>
+        <span class="kpi-lbl">Alerts 24h</span>
+      </div>
+      <div class="kpi-val" id="dash-alerts">—</div>
+      <div class="kpi-hint">All zones combined</div>
+    </div>
+
+    <div class="kpi warn" id="kpi-reports">
+      <div class="kpi-head">
+        <div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-7-3 18-6-7-9-4z"/></svg></div>
+        <span class="kpi-lbl">Reports 24h</span>
+      </div>
+      <div class="kpi-val" id="dash-reports">—</div>
+      <div class="kpi-hint">Connected Citizens</div>
+    </div>
+  </div>
+
+  <!-- KPI CARDS (3 secondaires) -->
+  <div class="dash-kpis" style="grid-template-columns:repeat(3,1fr)">
+    <div class="kpi green">
+      <div class="kpi-head">
+        <div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9-6-18-3 9H2"/></svg></div>
+        <span class="kpi-lbl">Symptoms 24h</span>
+      </div>
+      <div class="kpi-val" id="dash-symptoms">—</div>
+      <div class="kpi-hint">Health Cases Reported</div>
+    </div>
+    <div class="kpi warn">
+      <div class="kpi-head">
+        <div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10L12 4 2 10l10 6 10-6z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg></div>
+        <span class="kpi-lbl">Schools at Risk</span>
+      </div>
+      <div class="kpi-val" id="dash-schools">—</div>
+      <div class="kpi-hint">On Alert or Suspended</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-head">
+        <div class="kpi-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 20l-6 2V6l6-2"/><path d="M21 18l-6 2V6l6-2"/><path d="M9 4l6 2"/><path d="M9 20l6-2"/></svg></div>
+        <span class="kpi-lbl">Monitored Zones</span>
+      </div>
+      <div class="kpi-val" id="dash-zones">—</div>
+      <div class="kpi-hint">Districts of Gabès</div>
+    </div>
+  </div>
+
+  <!-- 2 colonnes -->
+  <div class="dash-grid-2">
+    <div class="card dash-section">
+      <div class="ds-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9-6-18-3 9H2"/></svg>
+        <h3>Top 3 Risk Zones</h3>
+      </div>
+      <div id="dash-top-zones" class="dash-zones-list"><div class="empty">Loading…</div></div>
+    </div>
+
+    <div class="card dash-section">
+      <div class="ds-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 003.4 0"/></svg>
+        <h3>Recent Alerts</h3>
+      </div>
+      <div id="dash-recent-alerts" class="dash-alerts-list"><div class="empty">Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- Résultats de chaque modèle IA (admin/health) -->
+  <div class="card dash-section" id="dash-models" hidden>
+    <div class="ds-head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="6" y="10" width="3" height="8" rx="1"/><rect x="11" y="6" width="3" height="12" rx="1"/><rect x="16" y="13" width="3" height="5" rx="1"/></svg>
+      <h3>Résultats des modèles IA <span class="badge" id="dash-models-tag">—</span></h3>
+    </div>
+    <div class="dash-models-body">
+      <table class="dash-models-table" id="dash-models-table">
+        <thead><tr><th>Modèle</th><th>RMSE</th><th>F1</th><th>AUC</th><th>R²</th></tr></thead>
+        <tbody><tr><td colspan="5" class="empty">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 2 colonnes (tendance + actions) -->
+  <div class="dash-grid-2">
+    <div class="card dash-section dash-trend-wrap">
+      <div class="ds-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <h3>Reports Trend (7 days)</h3>
+      </div>
+      <svg id="dash-trend" viewBox="0 0 600 160" preserveAspectRatio="none"></svg>
+    </div>
+
+    <div class="card dash-section">
+      <div class="ds-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.6" fill="currentColor"/></svg>
+        <h3>Recommendations</h3>
+      </div>
+      <div id="dash-reco-static" class="dash-reco-text">—</div>
+      <div class="dash-actions-grid">
+        <button class="dash-action-btn" onclick="window.location.hash='#/map'">
+          <span class="da-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 20l-6 2V6l6-2"/><path d="M21 18l-6 2V6l6-2z"/><path d="M9 4l6 2"/><path d="M9 20l6-2"/></svg></span>
+          <span>View Map</span>
+        </button>
+        <button class="dash-action-btn" onclick="window.location.hash='#/symptoms'">
+          <span class="da-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9-6-18-3 9H2"/></svg></span>
+          <span>Report Symptom</span>
+        </button>
+        <button class="dash-action-btn" onclick="window.location.hash='#/chatbot'">
+          <span class="da-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></span>
+          <span>Ask Nafass</span>
+        </button>
+        <button class="dash-action-btn" onclick="window.location.hash='#/school'">
+          <span class="da-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10L12 4 2 10l10 6 10-6z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg></span>
+          <span>School Mode</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</section>

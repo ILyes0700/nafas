@@ -1,0 +1,36 @@
+<section class="page sci-page fuzzy-page" id="page-fuzzy-type2">
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c3 0 3-10 6-10s3 10 6 10 3-6 6-6"/><path d="M3 21h18"/></svg>
+      </div>
+      <div>
+        <h1>Logique Floue — Type-2 Intervalle</h1>
+        <div class="ph-sub">Mamdani Type-1 → Type-2 intervalle avec réduction de type Karnik-Mendel. Produit le <b>fuzzy_score_type2</b> (feature clé des modèles ML/DL) et sa bande d'incertitude.</div>
+      </div>
+    </div>
+    <div class="ph-actions"><span id="fz-demo-badge" class="pill info" style="display:none">⚠ Modèle non entraîné</span><button class="btn" id="fz-refresh">Rafraîchir</button></div>
+  </div>
+
+  <div class="grid grid-4" id="fz-inputs">
+    <div class="card"><h3>Pollution</h3><div class="value" id="fz-in-poll">—</div><div class="hint">final_aqi normalisé (0-100)</div></div>
+    <div class="card"><h3>Vulnérabilité</h3><div class="value" id="fz-in-vuln">—</div><div class="hint">humidité + temp + population</div></div>
+    <div class="card"><h3>Sévérité symptômes</h3><div class="value" id="fz-in-symp">—</div><div class="hint">PM2.5 + PM10 + SO2</div></div>
+    <div class="card"><h3>Alertes 24h</h3><div class="value" id="fz-in-alerts">—</div><div class="hint">AQI &gt; 100</div></div>
+  </div>
+
+  <div class="card sci-best" id="fz-score" style="margin-top:18px"><div class="muted">Chargement…</div></div>
+
+  <div class="grid grid-2" style="margin-top:18px">
+    <div class="card"><h3>Fonctions d'appartenance Type-2 (FOU)</h3><div class="muted small">Trait plein = UMF · pointillé = LMF · zone ombrée = Footprint of Uncertainty.</div><div class="chart-box chart-box-lg"><canvas id="fz-mf"></canvas></div></div>
+    <div class="card"><h3>Degrés d'appartenance courants</h3><div class="muted small">Intervalle [LMF, UMF] pour la pollution actuelle.</div><div class="chart-box chart-box-lg"><canvas id="fz-deg"></canvas></div></div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>Score flou Type-2 par zone (avec bande d'incertitude)</h3>
+    <div class="table-wrap" style="margin-top:8px"><table class="basic-table sci-table" id="fz-cities">
+      <thead><tr><th>Zone</th><th>Score Type-2</th><th>Inf.</th><th>Sup.</th><th>Bande</th><th>Risque</th></tr></thead>
+      <tbody><tr><td colspan="6" class="muted">Chargement…</td></tr></tbody>
+    </table></div>
+  </div>
+</section>

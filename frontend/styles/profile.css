@@ -1,0 +1,482 @@
+/* =========================================================
+   Facebook-style Profile page (Nafass) - own identity/theme
+   Scoped under .pf2 ; supports light + dark via .pf2-dark
+   ========================================================= */
+.pf2 {
+  --bg:#f0f2f5; --panel:#ffffff; --text:#1c1e21; --muted:#65676b;
+  --line:#e4e6eb; --soft:#f0f2f5; --brand:#0d3b66; --brand2:#1d4e89;
+  --shadow:0 1px 2px rgba(0,0,0,.1),0 1px 3px rgba(0,0,0,.06);
+  --radius:14px;
+  max-width:1040px; margin:0 auto; color:var(--text);
+}
+.pf2.pf2-dark {
+  --bg:#18191a; --panel:#242526; --text:#e4e6eb; --muted:#b0b3b8;
+  --line:#3a3b3c; --soft:#3a3b3c; --brand:#4f93d6; --brand2:#6aa8e0;
+  --shadow:0 1px 2px rgba(0,0,0,.4);
+}
+.pf2 * { box-sizing:border-box; }
+
+/* ---- Cover ---- */
+.pf2-cover-card { position:relative; background:var(--panel); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+.pf2-cover { height:320px; background:linear-gradient(120deg,#0d3b66,#1d4e89 60%,#2f6db0); background-size:cover; background-position:center; }
+@media (max-width:760px){ .pf2-cover { height:180px; } }
+.pf2-cover-btn { position:absolute; top:16px; right:16px; border:0; background:rgba(255,255,255,.92); color:#1c1e21; border-radius:8px; padding:8px 12px; font-size:13px; font-weight:600; cursor:pointer; display:flex; gap:6px; align-items:center; box-shadow:var(--shadow); }
+.pf2-cover-btn:hover { background:#fff; }
+
+.pf2-head { display:flex; align-items:flex-end; gap:18px; padding:0 24px 18px; margin-top:-42px; position:relative; }
+@media (max-width:760px){ .pf2-head { flex-direction:column; align-items:center; text-align:center; margin-top:-56px; } }
+.pf2-avatar-wrap { position:relative; flex:0 0 auto; }
+.pf2-avatar { border-radius:50%; overflow:hidden; background:linear-gradient(135deg,var(--brand),var(--brand2)); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; border:4px solid var(--panel); }
+.pf2-avatar img { width:100%; height:100%; object-fit:cover; display:block; }
+.pf2-avatar.lg { width:168px; height:168px; font-size:64px; }
+.pf2-avatar.sm { width:40px; height:40px; font-size:16px; }
+.pf2-avatar.xs { width:32px; height:32px; font-size:13px; }
+@media (max-width:760px){ .pf2-avatar.lg { width:130px; height:130px; font-size:52px; } }
+.pf2-avatar-btn { position:absolute; bottom:8px; right:8px; width:38px; height:38px; border-radius:50%; border:0; background:var(--soft); color:var(--text); cursor:pointer; font-size:17px; box-shadow:var(--shadow); }
+.pf2-avatar-btn:hover { filter:brightness(.95); }
+
+.pf2-head-main { flex:1; min-width:0; padding-bottom:4px; }
+.pf2-head-main h1 { margin:0; font-size:30px; line-height:1.15; color:var(--text); }
+.pf2-username { color:var(--muted); font-size:15px; margin-top:2px; }
+.pf2-bio-line { color:var(--text); font-size:14px; margin-top:8px; max-width:60ch; }
+.pf2-meta { display:flex; flex-wrap:wrap; gap:14px; margin-top:8px; color:var(--muted); font-size:13px; }
+.pf2-meta span { display:inline-flex; align-items:center; gap:5px; }
+.pf2-stats { display:flex; gap:26px; margin-top:14px; }
+@media (max-width:760px){ .pf2-stats { justify-content:center; } }
+.pf2-stat { text-align:center; }
+.pf2-stat b { display:block; font-size:19px; color:var(--text); }
+.pf2-stat span { font-size:12.5px; color:var(--muted); }
+
+.pf2-actions { display:flex; gap:10px; align-items:center; padding-bottom:6px; flex-wrap:wrap; }
+.pf2 .btn { border-radius:8px; padding:9px 16px; font-size:14px; font-weight:600; cursor:pointer; border:1px solid transparent; display:inline-flex; align-items:center; gap:6px; }
+.pf2 .btn.primary { background:var(--brand); color:#fff; }
+.pf2 .btn.primary:hover { background:var(--brand2); }
+.pf2 .btn.outline { background:var(--soft); color:var(--text); border-color:var(--line); }
+.pf2 .btn.outline:hover { filter:brightness(.97); }
+.pf2 .btn.ghost { background:transparent; color:var(--muted); }
+.pf2-icon-btn { width:40px; height:40px; border-radius:8px; border:1px solid var(--line); background:var(--soft); cursor:pointer; font-size:17px; color:var(--text); }
+
+/* ---- Body layout ---- */
+.pf2-body { display:grid; grid-template-columns:360px 1fr; gap:18px; margin-top:18px; align-items:start; }
+@media (max-width:900px){ .pf2-body { grid-template-columns:1fr; } }
+.pf2-panel { background:var(--panel); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 18px; margin-bottom:18px; }
+.pf2-panel h3 { margin:0 0 12px; font-size:17px; color:var(--text); }
+.pf2-panel-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+.pf2-panel-head h3 { margin:0; }
+.pf2-side { position:sticky; top:12px; }
+@media (max-width:900px){ .pf2-side { position:static; } }
+.pf2 .empty { color:var(--muted); font-size:13px; text-align:center; padding:16px; }
+.pf2 .muted { color:var(--muted); }
+
+.pf2-about { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px; }
+.pf2-about li { display:flex; align-items:center; gap:10px; font-size:14px; color:var(--text); }
+.pf2-about li .ic { width:20px; text-align:center; }
+
+.pf2-photos { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; border-radius:8px; overflow:hidden; }
+.pf2-photos a { display:block; aspect-ratio:1/1; overflow:hidden; background:var(--soft); }
+.pf2-photos img, .pf2-photos video { width:100%; height:100%; object-fit:cover; display:block; }
+
+.pf2-files { display:flex; flex-direction:column; gap:8px; }
+.pf2-file { display:flex; align-items:center; gap:10px; padding:8px; border:1px solid var(--line); border-radius:10px; }
+.pf2-file .fi { width:34px; height:34px; border-radius:8px; background:var(--soft); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:12px; color:var(--brand); }
+.pf2-file .fm { min-width:0; flex:1; }
+.pf2-file .fm a { color:var(--brand); font-weight:600; font-size:13px; text-decoration:none; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pf2-file .fm span { color:var(--muted); font-size:11px; }
+.pf2-mini { font-size:12px; border-radius:8px; padding:5px 10px; border:1px solid var(--line); background:var(--soft); color:var(--brand); cursor:pointer; }
+.pf2-mini:hover { filter:brightness(.97); }
+.pf2-mini.danger { color:#d33; }
+
+/* ---- Composer ---- */
+.pf2-composer { position:relative; }
+.pf2-composer-top { display:flex; gap:10px; }
+.pf2-composer-top textarea { flex:1; min-height:46px; border:0; background:var(--soft); border-radius:20px; padding:12px 16px; font:inherit; color:var(--text); resize:vertical; outline:none; }
+.pf2-preview { margin-top:12px; position:relative; border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+.pf2-preview img, .pf2-preview video { width:100%; max-height:360px; object-fit:contain; background:#000; display:block; }
+.pf2-preview .pf2-doc-chip { display:flex; align-items:center; gap:8px; padding:12px 14px; font-size:13px; color:var(--text); }
+.pf2-preview .pf2-x { position:absolute; top:8px; right:8px; }
+.pf2-composer-bar { display:flex; align-items:center; gap:8px; margin-top:12px; border-top:1px solid var(--line); padding-top:12px; }
+.pf2-tool { border:0; background:transparent; color:var(--muted); font-size:14px; font-weight:600; cursor:pointer; border-radius:8px; padding:6px 10px; }
+.pf2-tool:hover { background:var(--soft); }
+.pf2-post-err { color:#d33; font-size:12.5px; }
+.pf2-composer-bar .btn.primary { margin-inline-start:auto; }
+.pf2-drop-hint { display:none; position:absolute; inset:6px; border:2px dashed var(--brand); border-radius:12px; align-items:center; justify-content:center; background:rgba(13,59,102,.06); color:var(--brand); font-weight:700; font-size:15px; pointer-events:none; }
+.pf2-composer.dragging .pf2-drop-hint { display:flex; }
+
+/* ---- Feed / posts ---- */
+.pf2-feed { display:flex; flex-direction:column; gap:18px; }
+.pf2-post { background:var(--panel); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px 16px; }
+.pf2-post-head { display:flex; align-items:center; gap:10px; }
+.pf2-post-who { flex:1; min-width:0; }
+.pf2-post-who b { display:block; color:var(--text); font-size:14.5px; }
+.pf2-post-who .sub { color:var(--muted); font-size:12px; }
+.pf2-follow-btn { border:0; background:transparent; color:var(--brand); font-weight:700; font-size:13px; cursor:pointer; padding:4px 8px; border-radius:6px; }
+.pf2-follow-btn.on { color:var(--muted); }
+.pf2-follow-btn:hover { background:var(--soft); }
+.pf2-menu-wrap { position:relative; }
+.pf2-menu-btn { border:0; background:transparent; color:var(--muted); font-size:20px; cursor:pointer; width:34px; height:34px; border-radius:50%; line-height:1; }
+.pf2-menu-btn:hover { background:var(--soft); }
+.pf2-menu { position:absolute; right:0; top:38px; background:var(--panel); border:1px solid var(--line); border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,.18); padding:6px; min-width:180px; z-index:20; }
+.pf2-menu button { display:flex; width:100%; gap:10px; align-items:center; border:0; background:transparent; color:var(--text); font-size:13.5px; padding:9px 10px; border-radius:8px; cursor:pointer; text-align:start; }
+.pf2-menu button:hover { background:var(--soft); }
+.pf2-menu button.danger { color:#d33; }
+.pf2-post-body { margin:12px 0; color:var(--text); font-size:15px; line-height:1.6; white-space:pre-wrap; word-wrap:break-word; }
+.pf2-tag { color:var(--brand); font-weight:600; }
+.pf2-media { margin:6px -16px; }
+.pf2-media img, .pf2-media video { width:100%; max-height:560px; object-fit:contain; background:#000; display:block; }
+.pf2-doc { display:flex; align-items:center; gap:10px; margin:6px 0; padding:12px 14px; background:var(--soft); border-radius:10px; color:var(--brand); text-decoration:none; font-size:14px; }
+.pf2-doc span { color:var(--muted); font-size:12px; }
+.pf2-counts { display:flex; align-items:center; justify-content:space-between; color:var(--muted); font-size:13px; padding:8px 2px; }
+.pf2-counts .rx-icons { display:inline-flex; gap:2px; }
+.pf2-actionsbar { display:flex; border-top:1px solid var(--line); border-bottom:1px solid var(--line); margin:2px 0 6px; }
+.pf2-act { flex:1; border:0; background:transparent; color:var(--muted); font-weight:600; font-size:14px; padding:9px 0; cursor:pointer; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; gap:7px; position:relative; }
+.pf2-act:hover { background:var(--soft); }
+.pf2-act.on { color:var(--brand); }
+
+/* reaction picker */
+.pf2-rx-pop { position:absolute; bottom:44px; left:0; display:flex; gap:4px; background:var(--panel); border:1px solid var(--line); border-radius:999px; padding:6px 10px; box-shadow:0 6px 20px rgba(0,0,0,.2); z-index:25; }
+.pf2-rx-pop button { border:0; background:transparent; font-size:26px; cursor:pointer; line-height:1; transition:transform .12s; }
+.pf2-rx-pop button:hover { transform:scale(1.35) translateY(-4px); }
+
+/* comments */
+.pf2-comments { display:flex; flex-direction:column; gap:10px; margin-top:6px; }
+.pf2-comment { display:flex; gap:8px; align-items:flex-start; }
+.pf2-c-main { flex:1; min-width:0; }
+.pf2-c-bubble { background:var(--soft); border-radius:16px; padding:8px 12px; display:inline-block; max-width:100%; }
+.pf2-c-bubble b { display:block; font-size:12.5px; color:var(--text); }
+.pf2-c-bubble span { font-size:14px; color:var(--text); word-wrap:break-word; }
+.pf2-c-actions { display:flex; gap:14px; margin:3px 0 0 12px; font-size:11.5px; color:var(--muted); }
+.pf2-c-actions button { border:0; background:transparent; color:var(--muted); font-weight:600; cursor:pointer; font-size:11.5px; padding:0; }
+.pf2-c-actions button:hover { text-decoration:underline; }
+.pf2-replies { margin:8px 0 0 30px; display:flex; flex-direction:column; gap:10px; }
+.pf2-comment-new { display:flex; gap:8px; margin-top:12px; align-items:center; }
+.pf2-comment-input { flex:1; border:0; background:var(--soft); border-radius:999px; padding:9px 14px; font:inherit; color:var(--text); outline:none; }
+.pf2-reply-box { margin:8px 0 0 30px; }
+
+.pf2-x { border:0; background:rgba(0,0,0,.5); color:#fff; width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:14px; }
+
+/* spinner */
+.pf2-spinner { display:flex; gap:6px; justify-content:center; padding:16px; }
+.pf2-spinner span { width:10px; height:10px; border-radius:50%; background:var(--brand); opacity:.6; animation:pf2bounce 1s infinite ease-in-out; }
+.pf2-spinner span:nth-child(2){ animation-delay:.15s; } .pf2-spinner span:nth-child(3){ animation-delay:.3s; }
+@keyframes pf2bounce { 0%,80%,100%{ transform:scale(.6); opacity:.4; } 40%{ transform:scale(1); opacity:1; } }
+
+/* modal */
+.pf2-modal { position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px; }
+.pf2-modal-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.5); }
+.pf2-modal-card { position:relative; width:100%; max-width:640px; max-height:92vh; overflow:auto; background:var(--panel); border-radius:14px; box-shadow:0 12px 40px rgba(0,0,0,.35); }
+.pf2-modal-head { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--line); }
+.pf2-modal-head h3 { margin:0; color:var(--text); }
+.pf2-modal-head .pf2-x { background:var(--soft); color:var(--text); }
+.pf2-modal-body { padding:18px 20px; }
+.pf2-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media (max-width:560px){ .pf2-grid2 { grid-template-columns:1fr; } }
+.pf-field { display:flex; flex-direction:column; gap:5px; margin-bottom:10px; }
+.pf-field label { font-size:12.5px; color:var(--muted); font-weight:600; }
+.pf-field small { font-weight:400; }
+.pf-field input, .pf-field textarea, .pf-field select { border:1px solid var(--line); background:var(--soft); border-radius:10px; padding:10px 12px; font:inherit; color:var(--text); outline:none; }
+.pf-field input:focus, .pf-field textarea:focus, .pf-field select:focus { border-color:var(--brand); background:var(--panel); }
+.pf-field input:disabled { opacity:.7; }
+.pf-err { background:#fee2e2; color:#991b1b; border-radius:10px; padding:10px 12px; font-size:13px; margin-bottom:12px; }
+.pf2-note { color:var(--muted); font-size:12px; margin:12px 0 0; }
+.pf2-modal-foot { display:flex; justify-content:flex-end; gap:10px; padding:14px 20px; border-top:1px solid var(--line); position:sticky; bottom:0; background:var(--panel); }
+
+/* clickable author links (visit each user's independent profile) */
+.pf2 .pf2-ulink{display:inline-block;text-decoration:none;color:inherit}
+.pf2 .pf2-uname{color:inherit;text-decoration:none;cursor:pointer}
+.pf2 .pf2-uname:hover{text-decoration:underline}
+.pf2 .pf2-ulink .pf2-avatar{cursor:pointer;transition:filter .15s}
+.pf2 .pf2-ulink:hover .pf2-avatar{filter:brightness(.94)}
+
+/* =========================================================
+   PRO POLISH LAYER v2 (appended) - richer, more "Facebook 2024" feel
+   Overrides earlier rules via equal specificity + later cascade.
+   ========================================================= */
+.pf2 {
+  --shadow:0 2px 6px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.05);
+  --shadow-hover:0 6px 16px rgba(0,0,0,.10), 0 16px 40px rgba(0,0,0,.08);
+  --radius:18px;
+  --ring:0 0 0 4px rgba(13,59,102,.12);
+}
+.pf2.pf2-dark { --ring:0 0 0 4px rgba(79,147,214,.18); }
+
+/* smooth everything */
+.pf2 * { transition:background-color .18s ease, color .18s ease, box-shadow .22s ease, transform .18s ease, filter .18s ease, border-color .18s ease; }
+@media (prefers-reduced-motion:reduce){ .pf2 * { transition:none !important; animation:none !important; } }
+
+/* cover: taller, animated gradient + soft vignette */
+.pf2-cover { height:360px; background:linear-gradient(120deg,#0a2f52,#0d3b66 40%,#1d4e89 70%,#2f6db0); background-size:200% 200%; animation:pf2Grad 16s ease infinite; position:relative; }
+.pf2-cover::after { content:""; position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.32),rgba(0,0,0,0) 45%); pointer-events:none; }
+@keyframes pf2Grad { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+@media (max-width:760px){ .pf2-cover { height:200px; } }
+.pf2-cover-card { border-radius:var(--radius); }
+.pf2-cover-btn { backdrop-filter:blur(8px); background:rgba(255,255,255,.82); border-radius:10px; font-weight:700; }
+.pf2-cover-btn:hover { transform:translateY(-1px); box-shadow:var(--shadow-hover); }
+
+/* avatar: gradient ring + hover lift */
+.pf2-avatar { border:4px solid var(--panel); box-shadow:0 0 0 4px rgba(13,59,102,.18), var(--shadow); }
+.pf2.pf2-dark .pf2-avatar { box-shadow:0 0 0 4px rgba(79,147,214,.28), var(--shadow); }
+.pf2-avatar.lg:hover { transform:scale(1.03) translateY(-2px); }
+.pf2-avatar-btn { box-shadow:var(--shadow); }
+.pf2-avatar-btn:hover { transform:scale(1.08); }
+
+/* name gets a subtle weight bump */
+.pf2-head-main h1 { font-weight:800; letter-spacing:-.5px; }
+
+/* stat pills */
+.pf2-stats { gap:10px; }
+.pf2-stat { padding:8px 16px; border-radius:14px; cursor:default; }
+.pf2-stat:hover { background:var(--soft); transform:translateY(-2px); }
+.pf2-stat b { font-size:20px; font-weight:800; }
+
+/* buttons: gradient primary + lift */
+.pf2 .btn { border-radius:10px; font-weight:700; }
+.pf2 .btn.primary { background:linear-gradient(135deg,var(--brand),var(--brand2)); box-shadow:0 4px 12px rgba(13,59,102,.28); }
+.pf2 .btn.primary:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(13,59,102,.36); filter:brightness(1.05); }
+.pf2 .btn.outline:hover, .pf2 .btn.ghost:hover { transform:translateY(-1px); }
+.pf2-icon-btn { border-radius:10px; }
+.pf2-icon-btn:hover { transform:translateY(-1px); box-shadow:var(--shadow); }
+
+/* panels + posts: hover elevation */
+.pf2-panel, .pf2-post { border:1px solid var(--line); }
+.pf2-panel:hover, .pf2-post:hover { box-shadow:var(--shadow-hover); }
+.pf2-panel h3, .pf2-panel-head h3 { font-weight:800; letter-spacing:-.2px; display:flex; align-items:center; gap:8px; }
+.pf2-panel h3::before { content:""; width:4px; height:16px; border-radius:3px; background:linear-gradient(var(--brand),var(--brand2)); display:inline-block; }
+
+/* post entrance animation */
+.pf2-post { animation:pf2In .4s ease both; }
+@keyframes pf2In { from{ opacity:0; transform:translateY(12px); } to{ opacity:1; transform:none; } }
+
+/* composer focus glow */
+.pf2-composer-top textarea:focus { box-shadow:var(--ring); background:var(--panel); }
+.pf2-tool:hover { transform:translateY(-1px); }
+
+/* action bar buttons scale nicely */
+.pf2-act:hover { transform:translateY(-1px); }
+.pf2-act.on { font-weight:800; }
+
+/* reaction popup: springy entrance */
+.pf2-rx-pop { animation:pf2Pop .18s cubic-bezier(.2,1.4,.4,1) both; }
+@keyframes pf2Pop { from{ opacity:0; transform:translateY(8px) scale(.9); } to{ opacity:1; transform:none; } }
+
+/* photos grid hover zoom */
+.pf2-photos a:hover img, .pf2-photos a:hover video { transform:scale(1.08); }
+.pf2-photos img, .pf2-photos video { transition:transform .3s ease; }
+
+/* comment bubble hover */
+.pf2-c-bubble { transition:background-color .18s ease; }
+.pf2-comment:hover .pf2-c-bubble { filter:brightness(.98); }
+
+/* pretty scrollbar */
+.pf2 *::-webkit-scrollbar { width:10px; height:10px; }
+.pf2 *::-webkit-scrollbar-thumb { background:var(--line); border-radius:8px; border:2px solid var(--panel); }
+.pf2 *::-webkit-scrollbar-thumb:hover { background:var(--muted); }
+
+/* viewing-another-user badge (owner-follow button styled as primary) */
+#pf-owner-follow { background:linear-gradient(135deg,var(--brand),var(--brand2)); color:#fff; box-shadow:0 4px 12px rgba(13,59,102,.28); }
+#pf-owner-follow.on { background:var(--soft); color:var(--text); box-shadow:none; }
+
+/* =========================================================
+   FRIENDS ZONE (Facebook-style: Friends / Followers / Following)
+   ========================================================= */
+.pf2-friends-head h3 { display:flex; align-items:center; gap:6px; }
+.pf2-fcount { font-size:12px; font-weight:600; color:var(--pf-sub,#64748b); }
+
+.pf2-ftabs { display:flex; gap:4px; background:var(--pf-chip,#f1f5f9); border-radius:12px; padding:4px; margin:10px 0 14px; }
+.pf2-ftab { flex:1; border:none; background:transparent; cursor:pointer; border-radius:9px; padding:7px 6px;
+  font-size:12px; font-weight:700; color:var(--pf-sub,#64748b); display:flex; flex-direction:column; align-items:center; gap:1px; transition:.15s; }
+.pf2-ftab b { font-size:13px; color:inherit; }
+.pf2-ftab:hover { color:var(--pf-text,#0f172a); }
+.pf2-ftab.active { background:var(--pf-card,#fff); color:var(--pf-accent,#2563eb); box-shadow:0 1px 4px rgba(15,23,42,.1); }
+
+.pf2-friends-grid { display:flex; flex-direction:column; gap:6px; }
+.pf2-fr-card { display:flex; align-items:center; gap:10px; padding:7px 8px; border-radius:12px; transition:background .15s; }
+.pf2-fr-card:hover { background:var(--pf-hover,#f8fafc); }
+.pf2-fr-av { flex:0 0 auto; width:44px; height:44px; border-radius:50%; overflow:hidden; display:flex; align-items:center;
+  justify-content:center; background:linear-gradient(135deg,#6366f1,#2563eb); color:#fff; font-weight:800; font-size:16px; text-decoration:none; }
+.pf2-fr-av img { width:100%; height:100%; object-fit:cover; }
+.pf2-fr-info { flex:1 1 auto; min-width:0; display:flex; flex-direction:column; }
+.pf2-fr-name { font-size:13.5px; font-weight:700; color:var(--pf-text,#0f172a); text-decoration:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pf2-fr-name:hover { text-decoration:underline; }
+.pf2-fr-role { font-size:11.5px; color:var(--pf-sub,#64748b); }
+.pf2-fr-follow { flex:0 0 auto; border:1px solid var(--pf-accent,#2563eb); background:var(--pf-accent,#2563eb); color:#fff;
+  border-radius:999px; padding:5px 12px; font-size:12px; font-weight:700; cursor:pointer; transition:.15s; }
+.pf2-fr-follow:hover { filter:brightness(1.06); }
+.pf2-fr-follow.on { background:transparent; color:var(--pf-sub,#64748b); border-color:var(--pf-border,#e2e8f0); }
+.pf2-friends-grid .empty { color:var(--pf-sub,#64748b); font-size:13px; padding:10px 4px; }
+
+/* Friend card actions (Message + Follow) */
+.pf2-fr-actions { flex:0 0 auto; display:flex; align-items:center; gap:6px; }
+.pf2-fr-msg { border:1px solid var(--pf-border,#e2e8f0); background:var(--pf-chip,#f1f5f9); color:var(--pf-text,#0f172a);
+  border-radius:999px; padding:5px 12px; font-size:12px; font-weight:700; cursor:pointer; transition:.15s; }
+.pf2-fr-msg:hover { background:var(--pf-accent,#2563eb); color:#fff; border-color:var(--pf-accent,#2563eb); }
+#pf-owner-msg { }
+
+/* =========================================================
+   PROFILE HEADER — PRO REFINE v3
+   Cleaner name/date placement, SVG icons (no emoji), pro buttons.
+   ========================================================= */
+
+/* Inline SVG icon sizing inside buttons */
+.pf2 .pf2-ic { width:18px; height:18px; flex:0 0 auto; display:block; }
+.pf2 .btn .pf2-ic { width:17px; height:17px; }
+.pf2-cover-btn .pf2-ic, .pf2-avatar-btn .pf2-ic { width:18px; height:18px; }
+.pf2-icon-btn .pf2-ic { width:19px; height:19px; }
+
+/* Header layout: give the name column room and breathe */
+.pf2-head { align-items:flex-end; gap:22px; padding:0 28px 22px; }
+.pf2-head-main { padding-bottom:6px; }
+
+/* Name + username block */
+.pf2-head-main h1 {
+  font-size:28px; font-weight:800; letter-spacing:-.4px; line-height:1.15;
+  color:var(--text); margin:0 0 2px;
+}
+.pf2-username { font-size:14.5px; color:var(--muted); font-weight:500; margin:0 0 2px; }
+.pf2-bio-line { font-size:14px; color:var(--text); margin-top:8px; max-width:62ch; line-height:1.5; }
+
+/* Meta row — refined pill chips with SVG icons (role · location · language · joined) */
+.pf2-meta { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.pf2-meta span {
+  display:inline-flex; align-items:center; gap:6px;
+  background:var(--soft); border:1px solid var(--line); color:var(--muted);
+  font-size:12.5px; font-weight:600; padding:5px 11px; border-radius:999px; line-height:1;
+}
+.pf2-meta .pf2-mic { width:14px; height:14px; flex:0 0 auto; opacity:.85; }
+
+/* Stats — tidy, professional */
+.pf2-stats { gap:6px; margin-top:16px; }
+.pf2-stat { padding:8px 18px; border-radius:12px; transition:background .15s ease, transform .15s ease; }
+.pf2-stat:hover { background:var(--soft); transform:none; }
+.pf2-stat b { font-size:19px; font-weight:800; }
+.pf2-stat span { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; }
+
+/* Action buttons — consistent height, clean, app-like (not playful) */
+.pf2-actions { gap:8px; align-items:center; }
+.pf2 .btn {
+  height:40px; padding:0 16px; border-radius:10px; font-size:13.5px; font-weight:700;
+  display:inline-flex; align-items:center; gap:8px; line-height:1; cursor:pointer;
+  border:1px solid transparent; transition:transform .15s ease, box-shadow .15s ease, background .15s ease, filter .15s ease;
+}
+.pf2 .btn.primary { background:linear-gradient(135deg,var(--brand),var(--brand2)); color:#fff; box-shadow:0 4px 12px rgba(13,59,102,.24); }
+.pf2 .btn.primary:hover { transform:translateY(-1px); box-shadow:0 8px 18px rgba(13,59,102,.3); }
+.pf2 .btn.outline { background:var(--panel); color:var(--text); border-color:var(--line); box-shadow:none; }
+.pf2 .btn.outline:hover { background:var(--soft); transform:translateY(-1px); }
+.pf2-icon-btn {
+  width:40px; height:40px; border-radius:10px; border:1px solid var(--line); background:var(--panel);
+  color:var(--text); cursor:pointer; display:inline-flex; align-items:center; justify-content:center;
+  transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.pf2-icon-btn:hover { background:var(--soft); transform:translateY(-1px); box-shadow:var(--shadow); }
+
+/* Cover + avatar camera buttons — subtle, professional */
+.pf2-cover-btn { display:inline-flex; align-items:center; gap:7px; font-weight:700; }
+.pf2-avatar-btn {
+  width:40px; height:40px; display:flex; align-items:center; justify-content:center;
+  background:var(--panel); color:var(--text); border:1px solid var(--line);
+}
+.pf2-avatar-btn:hover { background:var(--soft); }
+
+/* Mobile: keep name/meta centered and neat */
+@media (max-width:760px){
+  .pf2-head { padding:0 16px 18px; gap:12px; }
+  .pf2-meta { justify-content:center; }
+  .pf2-actions { justify-content:center; }
+}
+
+/* Intro list SVG icons (replaced emoji) */
+.pf2-about li .ic { display:inline-flex; align-items:center; justify-content:center; width:20px; flex:0 0 auto; color:var(--muted); }
+.pf2-about li .ic svg { width:16px; height:16px; }
+.pf2-about li { display:flex; align-items:center; gap:10px; }
+
+/* =========================================================
+   PROFILE HEADER — CLEAN LAYOUT v4
+   Nothing overlaps the cover photo; header sits cleanly below it.
+   ========================================================= */
+.pf2-cover-card { padding-bottom:22px; }
+.pf2-head {
+  margin-top:0;                 /* remove the overlap onto the cover */
+  padding:22px 28px 4px;
+  align-items:center;
+  gap:20px;
+}
+.pf2-avatar.lg { width:132px; height:132px; font-size:50px; }
+.pf2-avatar { border:4px solid var(--panel); box-shadow:0 0 0 1px var(--line), var(--shadow); }
+.pf2-avatar.lg:hover { transform:none; }
+.pf2-head-main { align-self:center; padding-bottom:0; }
+.pf2-head-main h1 { font-size:26px; font-weight:800; margin:0 0 3px; }
+.pf2-actions { align-self:center; padding-bottom:0; }
+.pf2-cover-btn { top:14px; right:14px; }
+
+@media (max-width:760px){
+  .pf2-head { margin-top:0; padding:18px 16px 4px; flex-direction:column; text-align:center; gap:12px; }
+  .pf2-avatar.lg { width:112px; height:112px; font-size:44px; }
+}
+
+/* ===== Reposts / shared posts, reactors modal, clickable reaction summary (v2.7.0) ===== */
+.pf2-rx-summary { border:0; background:transparent; color:var(--muted); font-size:13px; cursor:pointer; padding:0; display:inline-flex; align-items:center; gap:4px; }
+.pf2-rx-summary:hover { text-decoration:underline; }
+.pf2-rx-summary .rx-icons span { margin-right:-3px; }
+
+.pf2-shared { border:1px solid var(--line); border-radius:12px; padding:12px; margin:4px 0 6px; background:var(--soft); }
+.pf2-shared-head { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.pf2-shared-who b { font-size:14px; }
+.pf2-shared-who .sub { display:block; color:var(--muted); font-size:12px; }
+.pf2-shared-body { font-size:14px; line-height:1.5; margin:2px 0 6px; white-space:pre-wrap; word-break:break-word; }
+.pf2-shared-gone { color:var(--muted); font-size:13px; font-style:italic; }
+
+.pf2-modal-back { position:fixed; inset:0; background:rgba(15,23,42,.55); z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px; animation:pf2Fade .15s ease both; }
+@keyframes pf2Fade { from{opacity:0} to{opacity:1} }
+.pf2-modal { width:100%; max-width:420px; max-height:80vh; overflow:auto; background:var(--panel,#fff); color:var(--text,#111); border-radius:14px; box-shadow:0 18px 50px rgba(0,0,0,.35); }
+.pf2-modal-h { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--line,#e6e9ef); position:sticky; top:0; background:inherit; }
+.pf2-modal-h b { font-size:16px; }
+.pf2-modal-x { border:none; background:transparent; font-size:18px; cursor:pointer; color:var(--muted,#667085); border-radius:50%; width:32px; height:32px; }
+.pf2-modal-x:hover { background:var(--soft,#f1f5f9); }
+.pf2-rx-tabs { display:flex; flex-wrap:wrap; gap:6px; padding:12px 16px 0; }
+.pf2-rx-tab { border:1px solid var(--line,#e6e9ef); border-radius:999px; padding:4px 10px; font-size:14px; }
+.pf2-rx-people { padding:6px 8px 12px; }
+.pf2-rx-row { display:flex; align-items:center; gap:10px; padding:6px 8px; border-radius:8px; }
+.pf2-rx-row:hover { background:var(--soft,#f1f5f9); }
+.pf2-rx-ava { position:relative; flex:0 0 auto; width:40px; height:40px; }
+.pf2-rx-ava .pf-avatar.xs, .pf2-rx-ava .pf2-avatar.xs { width:40px; height:40px; box-shadow:none; }
+.pf2-rx-ava a { display:block; }
+.pf2-rx-badge { position:absolute; right:-3px; bottom:-3px; font-size:12px; line-height:1; width:18px; height:18px; display:flex; align-items:center; justify-content:center; background:var(--panel,#fff); border-radius:50%; box-shadow:0 0 0 2px var(--panel,#fff); }
+.pf2-rx-nm { flex:1; font-size:14px; font-weight:600; color:var(--text,#111); text-decoration:none; }
+.pf2-rx-nm:hover { text-decoration:underline; }
+
+/* ===== Bigger reactors modal + Saved posts overlay (v2.7.2) ===== */
+.pf2-modal { max-width:460px; }
+.pf2-modal-h b { font-size:17px; }
+.pf2-rx-people { max-height:58vh; overflow:auto; }
+
+.pf2-saved-back { position:fixed; inset:0; background:rgba(15,23,42,.55); z-index:1000; display:flex; align-items:flex-start; justify-content:center; padding:24px 16px; overflow:auto; animation:pf2Fade .15s ease both; }
+.pf2-saved { width:100%; max-width:640px; margin:auto; background:var(--panel,#fff); color:var(--text,#111); border-radius:14px; box-shadow:0 18px 50px rgba(0,0,0,.35); overflow:hidden; }
+.pf2-saved-h { display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--line,#e6e9ef); position:sticky; top:0; background:inherit; z-index:1; }
+.pf2-saved-h b { font-size:17px; }
+.pf2-saved-x { border:none; background:transparent; font-size:18px; cursor:pointer; color:var(--muted,#667085); border-radius:50%; width:34px; height:34px; }
+.pf2-saved-x:hover { background:var(--soft,#f1f5f9); }
+.pf2-saved-body { padding:14px 16px 20px; display:flex; flex-direction:column; gap:14px; }
+
+
+/* ============================================================
+   EDIT PROFILE MODAL — fix visibilité + design moderne (R177)
+   ============================================================ */
+.pf2-modal[hidden]{display:none !important;}
+.pf2-modal-card{max-width:560px;border-radius:20px;box-shadow:0 24px 70px rgba(15,23,42,.42);animation:pfModalIn .22s cubic-bezier(.2,1,.3,1) both;}
+@keyframes pfModalIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+.pf2-modal-head{padding:18px 22px;background:linear-gradient(120deg,#0d3b66,#1d4e89);border-bottom:none;}
+.pf2-modal-head h3{color:#fff;font-size:17px;font-weight:800;letter-spacing:.2px;}
+.pf2-modal-head .pf2-x{background:rgba(255,255,255,.18);color:#fff;}
+.pf2-modal-head .pf2-x:hover{background:rgba(255,255,255,.32);}
+.pf2-modal-body{padding:22px;}
+.pf2-grid2{gap:14px;}
+.pf-field{gap:6px;margin-bottom:12px;}
+.pf-field label{font-size:11.5px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.3px;}
+.pf-field input,.pf-field textarea,.pf-field select{border:1px solid #e2e8f0;background:#f8fafc;border-radius:11px;padding:11px 13px;font-size:14px;transition:border-color .15s,box-shadow .15s,background .15s;}
+.pf-field input:focus,.pf-field textarea:focus,.pf-field select:focus{border-color:#0d3b66;background:#fff;box-shadow:0 0 0 4px rgba(13,59,102,.12);}
+.pf2-modal-foot{padding:16px 22px;background:#f8fafc;border-top:1px solid #eef1f6;}
+.pf2-modal-foot .btn{border-radius:11px;padding:10px 20px;font-weight:700;}
+.pf2-modal-foot .btn.primary{background:#0d3b66;color:#fff;}
+.pf2-modal-foot .btn.primary:hover{background:#1d4e89;}
+.pf2.pf2-dark .pf-field input,.pf2.pf2-dark .pf-field textarea,.pf2.pf2-dark .pf-field select{background:#3a3b3c;border-color:#4a4b4c;color:#e4e6eb;}
+.pf2.pf2-dark .pf-field label{color:#b0b3b8;}
+.pf2.pf2-dark .pf2-modal-foot{background:#242526;border-color:#3a3b3c;}

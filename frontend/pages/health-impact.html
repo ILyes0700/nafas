@@ -1,0 +1,32 @@
+<section class="page sci-page health-page" id="page-health-impact">
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2 5 4-12 2 7h6"/></svg>
+      </div>
+      <div>
+        <h1>Indice d'Impact Sanitaire</h1>
+        <div class="ph-sub">Contribution scientifique spécifique à Gabès (40+ ans d'exposition industrielle). Combine AQI, PM2.5, SO2, population vulnérable et heures d'exposition.</div>
+      </div>
+    </div>
+    <div class="ph-actions"><span id="hi-demo-badge" class="pill info" style="display:none">⚠ Modèle non entraîné</span><button class="btn" id="hi-refresh">Rafraîchir</button></div>
+  </div>
+
+  <div class="card">
+    <h3>Classement des zones par risque sanitaire</h3>
+    <div id="hi-cards" class="dl-pred-grid"><div class="muted">Chargement…</div></div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>Tableau détaillé + recommandations</h3>
+    <div class="table-wrap" style="margin-top:8px"><table class="basic-table sci-table" id="hi-table">
+      <thead><tr><th>Zone</th><th>Score</th><th>Niveau</th><th>AQI</th><th>PM2.5</th><th>SO2</th><th>Pop. vuln.</th><th>Recommandation</th></tr></thead>
+      <tbody><tr><td colspan="8" class="muted">Chargement…</td></tr></tbody>
+    </table></div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>Tendance de l'impact sanitaire (30 jours)</h3>
+    <div class="chart-box chart-box-lg"><canvas id="hi-trend"></canvas></div>
+  </div>
+</section>

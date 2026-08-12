@@ -1,0 +1,61 @@
+<div class="page-head">
+  <div>
+    <h1>BiLSTM + Autoencoder</h1>
+    <p class="muted">
+      Representation latente apprise par autoencodeur, puis prevision
+      bidirectionnelle. Entraine uniquement sur les 80% les plus anciens des
+      donnees reelles Open-Meteo / CAMS.
+    </p>
+  </div>
+  <div class="page-head-actions">
+    <span id="bae-demo-badge" class="badge badge-warn" style="display:none">
+      Modele non entraine
+    </span>
+    <button id="bae-refresh" class="btn btn-ghost">Actualiser</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Architecture</h2>
+  <div class="bae-arch">
+    <div class="bae-step"><b>Fenetre 24 h</b><span class="muted small">15 variables reelles</span></div>
+    <div class="bae-arrow">-&gt;</div>
+    <div class="bae-step"><b>Encodeur LSTM</b><span class="muted small">compression</span></div>
+    <div class="bae-arrow">-&gt;</div>
+    <div class="bae-step bae-latent"><b>Latent 16</b><span class="muted small">representation</span></div>
+    <div class="bae-arrow">-&gt;</div>
+    <div class="bae-step"><b>BiLSTM</b><span class="muted small">prevision</span></div>
+    <div class="bae-arrow">-&gt;</div>
+    <div class="bae-step"><b>AQI t+h</b><span class="muted small">1 h / 6 h / 24 h</span></div>
+  </div>
+  <p class="muted small" style="margin-top:10px">
+    L'autoencodeur est entraine en reconstruction sur les seules donnees
+    d'entrainement. Son erreur de reconstruction sert aussi de signal
+    d'anomalie : une fenetre mal reconstruite correspond en general a un
+    episode de pollution atypique.
+  </p>
+</div>
+
+<div class="card">
+  <h2>Performance par horizon</h2>
+  <div class="table-wrap">
+    <table id="bae-table" class="table">
+      <thead>
+        <tr>
+          <th>Modele</th><th>Horizon</th><th>MAE</th><th>RMSE</th>
+          <th>MAPE</th><th>R&sup2;</th><th>Latence</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="7" class="muted">Chargement...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Comparaison avec les autres modeles recurrents</h2>
+  <div style="position:relative;height:320px">
+    <canvas id="bae-chart"></canvas>
+  </div>
+</div>

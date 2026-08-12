@@ -1,0 +1,45 @@
+<section class="page sci-page cgan-page" id="page-cgan">
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h6v6H4zM14 14h6v6h-6z"/><path d="M10 7h4a2 2 0 012 2v5"/><path d="M7 10v4a2 2 0 002 2h5"/></svg>
+      </div>
+      <div>
+        <h1>AE-CGAN — Autoencodeur + GAN Conditionnel</h1>
+        <div class="ph-sub">Version pro (état de l'art) : un <b>autoencodeur</b> apprend d'abord la vraie forme des séquences AQI 24h (cycles jour/nuit, pics), puis un <b>GAN conditionnel</b> génère de nouveaux échantillons dans l'espace latent (saison, catégorie, contexte industriel/côtier, heure). Plus fidèle que le CGAN direct sur peu de données — augmentation de données pour les modèles.</div>
+      </div>
+    </div>
+    <div class="ph-actions"><span id="gn-demo-badge" class="pill info" style="display:none">⚠ Modèle non entraîné</span><button class="btn" id="gn-refresh">Rafraîchir</button></div>
+  </div>
+
+  <div class="card" id="gn-explain" style="margin-bottom:18px">
+    <h3>Comment fonctionne l'AE-CGAN ?</h3>
+    <div class="muted">
+      <p><b>1. Autoencodeur</b> — un encodeur (Conv1D → LSTM) compresse chaque vraie séquence de 24h en un petit code latent qui capture sa forme (cycle diurne, pics industriels) ; un décodeur sait la reconstruire.</p>
+      <p><b>2. GAN conditionnel latent</b> — un générateur apprend à créer de <i>nouveaux</i> codes latents réalistes (conditionnés par l'heure et le contexte), qu'un discriminateur essaie de démasquer.</p>
+      <p><b>3. Décodage</b> — le décodeur transforme ces nouveaux codes en séquences AQI synthétiques réalistes. Résultat : des données augmentées plus proches du réel → de meilleurs modèles de prédiction, surtout LSTM/BiLSTM.</p>
+      <p class="small">Note honnête : pour une zone avec très peu de points réels (moins de 32), l'AE-CGAN neuronal ne peut pas s'entraîner de façon fiable ; le système bascule alors sur un générateur statistique clairement étiqueté (jamais de valeurs inventées non signalées).</p>
+    </div>
+  </div>
+
+  <div class="grid grid-4" id="gn-metrics">
+    <div class="card"><h3>Coverage score</h3><div class="value" id="gn-cov">—</div><div class="hint">10 bins AQI</div></div>
+    <div class="card"><h3>Distance de Fréchet</h3><div class="value" id="gn-fd">—</div><div class="hint">normalisée (÷ σ réel) — 0 = parfait</div></div>
+    <div class="card"><h3>Similarité distrib.</h3><div class="value" id="gn-sim">—</div><div class="hint">réel vs généré</div></div>
+    <div class="card"><h3>Échantillons générés</h3><div class="value" id="gn-ep">—</div><div class="hint">AE-CGAN</div></div>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:18px">
+    <div class="card" id="gn-loss-card"><h3>Courbes de perte (G et D)</h3><div class="chart-box chart-box-lg"><canvas id="gn-loss"></canvas></div></div>
+    <div class="card"><h3>Cycle AQI 24h — réel vs généré (AE-CGAN)</h3><div class="chart-box chart-box-lg"><canvas id="gn-overlay"></canvas></div></div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>Évaluation de l'augmentation de données</h3>
+    <div class="muted small">Prouve que l'AE-CGAN apporte une vraie valeur ajoutée. La colonne « Méthode » indique la vraie technique utilisée par zone (AE-CGAN si assez de données réelles, sinon générateur statistique honnête).</div>
+    <div class="table-wrap" style="margin-top:8px"><table class="basic-table sci-table" id="gn-aug">
+      <thead><tr><th>Méthode de génération</th><th>Échantillons</th><th>Fidélité moy.</th></tr></thead>
+      <tbody><tr><td colspan="3" class="muted">Chargement…</td></tr></tbody>
+    </table></div>
+  </div>
+</section>

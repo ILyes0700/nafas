@@ -1,0 +1,80 @@
+<section class="page sci-page mlx-page" id="page-forecast-ml">
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 8l7-5 7 5"/><path d="M5 8v8l7 5 7-5V8"/></svg>
+      </div>
+      <div>
+        <h1>ML &mdash; Explicabilit&eacute; 2026 : TreeSHAP &middot; DeepSHAP &middot; DLIME</h1>
+        <div class="ph-sub">Mod&egrave;les &agrave; arbres r&eacute;gl&eacute;s par Optuna, courbes ROC AUC (4 classes + macro) et explicabilit&eacute; de pointe : TreeSHAP (arbres), DeepSHAP (r&eacute;seau profond), DLIME (local stable), PDP et Permutation Importance.</div>
+      </div>
+    </div>
+    <div class="ph-actions"><span id="ml-demo-badge" class="pill info" style="display:none">&#9888; Mod&egrave;le non entra&icirc;n&eacute;</span><button class="btn" id="ml-refresh">Rafra&icirc;chir</button></div>
+  </div>
+
+  <div class="card">
+    <h3>Tableau comparatif ML</h3>
+    <div class="table-wrap" style="margin-top:8px"><table class="basic-table sci-table" id="ml-table">
+      <thead><tr><th>Mod&egrave;le</th><th>Acc %</th><th>Prec</th><th>Rec</th><th>F1</th><th>MAE</th><th>RMSE</th><th>MAPE</th><th>SMAPE</th><th>R&sup2;</th><th>AUC</th><th>Lat</th></tr></thead>
+      <tbody><tr><td colspan="12" class="muted">Chargement&hellip;</td></tr></tbody>
+    </table></div>
+    <div class="muted small" id="ml-cv" style="margin-top:8px"></div>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:18px">
+    <div class="card"><h3>Courbes ROC (multi-classes + macro)</h3><div class="chart-box chart-box-lg"><canvas id="ml-roc"></canvas></div>
+      <details class="sci-exp"><summary>&#128218; Explication scientifique compl&egrave;te</summary>
+      <ul><li><b>R&ocirc;le :</b> mesurer la capacit&eacute; du mod&egrave;le &agrave; s&eacute;parer les classes de qualit&eacute; de l&rsquo;air (Bon / Mod&eacute;r&eacute; / Mauvais / Dangereux).</li><li><b>Principe math&eacute;matique :</b> la courbe trace le taux de vrais positifs (TPR = recall) contre le taux de faux positifs (FPR) pour tous les seuils de d&eacute;cision. L&rsquo;AUC est l&rsquo;aire sous la courbe (probabilit&eacute; qu&rsquo;un cas positif tir&eacute; au hasard soit mieux class&eacute; qu&rsquo;un n&eacute;gatif).</li><li><b>Axes / couleurs :</b> X = FPR (fausses alertes), Y = TPR (bonnes d&eacute;tections). Chaque couleur = une classe ; la ligne pointill&eacute;e grise = hasard (AUC 0,5).</li><li><b>Interpr&eacute;tation :</b> plus la courbe &laquo; monte &agrave; gauche &raquo;, meilleur est le mod&egrave;le. AUC &gt; 0,9 = excellent.</li><li><b>Limites :</b> l&rsquo;AUC peut &ecirc;tre optimiste sur classes d&eacute;s&eacute;quilibr&eacute;es &rarr; compl&eacute;ter par la courbe Pr&eacute;cision-Rappel.</li><li><b>Erreur &agrave; &eacute;viter :</b> confondre AUC &eacute;lev&eacute;e et bonne calibration ; une AUC forte ne garantit pas des probabilit&eacute;s fiables.</li></ul></details></div>
+    <div class="card"><h3>Graphe 1 &mdash; TreeSHAP : importance globale (mod&egrave;les &agrave; arbres) &#9733;</h3><div class="muted small">Version moderne 2026 : valeurs de Shapley <b>exactes</b> calcul&eacute;es par l&rsquo;algorithme TreeSHAP (Lundberg 2020) directement sur le Random Forest &mdash; rapide et sans approximation.</div><div class="chart-box chart-box-lg"><canvas id="ml-shap-global"></canvas></div><div class="muted small" id="ml-shap-global-note" style="margin-top:8px"></div>
+      <details class="sci-exp"><summary>&#128218; Explication scientifique compl&egrave;te</summary>
+      <ul><li><b>R&ocirc;le :</b> classer les variables (polluants, m&eacute;t&eacute;o) par leur contribution moyenne &agrave; la pr&eacute;diction de l&rsquo;AQI.</li><li><b>Principe math&eacute;matique :</b> la valeur de Shapley &phi;&#7522; r&eacute;partit &eacute;quitablement la pr&eacute;diction entre variables selon la th&eacute;orie des jeux coop&eacute;ratifs ; TreeSHAP la calcule exactement en O(arbres &times; feuilles).</li><li><b>Axes / couleurs :</b> Y = variables, X = |importance| moyenne normalis&eacute;e ; barre plus fonc&eacute;e = plus importante.</li><li><b>Interpr&eacute;tation :</b> la variable du haut est le principal moteur de la qualit&eacute; de l&rsquo;air &agrave; Gab&egrave;s.</li><li><b>Limites :</b> l&rsquo;importance globale masque les effets locaux (voir Waterfall) et les interactions (voir DeepSHAP).</li><li><b>Erreur &agrave; &eacute;viter :</b> interpr&eacute;ter l&rsquo;importance comme une causalit&eacute; ; c&rsquo;est une association apprise par le mod&egrave;le.</li></ul></details></div>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:18px">
+    <div class="card"><h3>Graphe 2 &mdash; SHAP+Deep : DeepSHAP (r&eacute;seau profond) vs TreeSHAP (arbres) &#9733;</h3><div class="muted small">Barres grises = importance <b>TreeSHAP</b> (arbres), barres violettes = importance <b>DeepSHAP</b> (r&eacute;seau de neurones). L&rsquo;&eacute;cart r&eacute;v&egrave;le les effets non-lin&eacute;aires et de seuil captur&eacute;s par le deep learning.</div><div class="chart-box chart-box-lg"><canvas id="ml-shap-deep"></canvas></div><div class="muted small" id="ml-shap-deep-note" style="margin-top:8px"></div>
+      <details class="sci-exp"><summary>&#128218; Explication scientifique compl&egrave;te</summary>
+      <ul><li><b>R&ocirc;le :</b> comparer deux familles d&rsquo;explicabilit&eacute; pour voir ce que le r&eacute;seau profond &laquo; voit &raquo; en plus.</li><li><b>Principe math&eacute;matique :</b> DeepSHAP combine DeepLIFT et les valeurs de Shapley pour propager les contributions &agrave; travers les couches du r&eacute;seau (r&eacute;f&eacute;rence + r&egrave;gle de cha&icirc;ne).</li><li><b>Axes / couleurs :</b> Y = variables, X = importance normalis&eacute;e ; gris = TreeSHAP, violet = DeepSHAP.</li><li><b>Interpr&eacute;tation :</b> une variable haute en DeepSHAP mais basse en TreeSHAP a un effet <b>non-lin&eacute;aire</b> (seuil, saturation) que les arbres capturent moins finement.</li><li><b>Limites :</b> DeepSHAP d&eacute;pend de l&rsquo;&eacute;chantillon de r&eacute;f&eacute;rence et n&eacute;cessite TensorFlow.</li><li><b>Erreur &agrave; &eacute;viter :</b> comparer les valeurs absolues des deux m&eacute;thodes ; comparez plut&ocirc;t les <b>rangs</b>.</li></ul></details></div>
+    <div class="card"><h3>SHAP Beeswarm &mdash; distribution par instance</h3><div class="muted small">Chaque point = une observation r&eacute;elle. Couleur : bleu = valeur basse, rouge = valeur haute du polluant.</div><div class="chart-box chart-box-lg"><canvas id="ml-beeswarm"></canvas></div>
+      <details class="sci-exp"><summary>&#128218; Explication scientifique compl&egrave;te</summary>
+      <ul><li><b>R&ocirc;le :</b> montrer &agrave; la fois l&rsquo;importance ET le sens de l&rsquo;effet de chaque variable, sur toutes les observations.</li><li><b>Principe :</b> position horizontale = valeur SHAP (impact sur l&rsquo;AQI) ; densit&eacute; verticale = nombre d&rsquo;observations ; couleur = valeur de la variable.</li><li><b>Axes / couleurs :</b> X = impact SHAP (n&eacute;gatif &rarr; baisse l&rsquo;AQI, positif &rarr; l&rsquo;augmente) ; rouge = valeur haute, bleu = valeur basse.</li><li><b>Interpr&eacute;tation :</b> si les points rouges d&rsquo;un polluant sont &agrave; droite, alors une forte concentration augmente l&rsquo;AQI (logique attendue).</li><li><b>Limites :</b> lecture d&eacute;licate quand beaucoup de variables se chevauchent.</li><li><b>Erreur &agrave; &eacute;viter :</b> lire un seul point comme une r&egrave;gle g&eacute;n&eacute;rale.</li></ul></details></div>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:18px">
+    <div class="card"><h3>PDP &mdash; Partial Dependence (effet marginal) &#9733;</h3><div class="muted small">Effet moyen de chaque polluant sur l&rsquo;AQI pr&eacute;dit, toutes choses &eacute;gales par ailleurs.</div><div class="chart-box chart-box-lg"><canvas id="ml-pdp"></canvas></div><div class="muted small" id="ml-pdp-note" style="margin-top:8px"></div>
+      <details class="sci-exp"><summary>&#128218; Explication scientifique compl&egrave;te</summary>
+      <ul><li><b>R&ocirc;le :</b> visualiser la <b>forme</b> de la relation entre un polluant et l&rsquo;AQI (lin&eacute;aire ? seuil ? saturation ?).</li><li><b>Principe math&eacute;matique :</b> on fixe une variable &agrave; une valeur donn&eacute;e pour toutes les observations, on moyenne les pr&eacute;dictions, puis on balaie une grille de valeurs.</li><li><b>Axes / couleurs :</b> X = valeur r&eacute;elle du polluant, Y = AQI moyen pr&eacute;dit ; une couleur par variable.</li><li><b>Interpr&eacute;tation :</b> pente forte = influence forte ; un &laquo; coude &raquo; = effet de seuil sanitaire.</li><li><b>Limites :</b> suppose l&rsquo;ind&eacute;pendance des variables ; trompeur en cas de forte corr&eacute;lation (compl&eacute;ter par ICE/ALE).</li><li><b>Erreur &agrave; &eacute;viter :</b> extrapoler hors de la plage de donn&eacute;es r&eacute;elles.</li></ul></details></div>
+    <div class="card"><h3>Permutation Importance (model-agnostic) &#9733;</h3><div class="muted small">Importance mesur&eacute;e par la d&eacute;gradation des performances quand on m&eacute;lange une variable.</div><div class="chart-box chart-box-lg"><canvas id="ml-permutation"></canvas></div><div class="muted small" id="ml-perm-note" style="margin-top:8px"></div>
+      <details class="sci-exp"><summary>&#128218; Explication scientifique compl&egrave;te</summary>
+      <ul><li><b>R&ocirc;le :</b> confirmer l&rsquo;importance des variables ind&eacute;pendamment de SHAP, avec une m&eacute;thode robuste et universelle.</li><li><b>Principe math&eacute;matique :</b> on permute al&eacute;atoirement les valeurs d&rsquo;une variable et on mesure l&rsquo;augmentation de l&rsquo;erreur ; plus l&rsquo;erreur monte, plus la variable est cruciale.</li><li><b>Axes / couleurs :</b> Y = variables, X = perte de performance normalis&eacute;e.</li><li><b>Interpr&eacute;tation :</b> un accord TreeSHAP + Permutation renforce la confiance dans le classement des variables.</li><li><b>Limites :</b> sous-estime les variables corr&eacute;l&eacute;es (l&rsquo;info reste disponible via la variable jumelle).</li><li><b>Erreur &agrave; &eacute;viter :</b> comparer directement l&rsquo;&eacute;chelle de Permutation &agrave; celle de SHAP (unit&eacute;s diff&eacute;rentes).</li></ul></details></div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>&#128269; Comparaison scientifique : SHAP (TreeSHAP) vs SHAP+Deep (DeepSHAP)</h3>
+    <div id="ml-comparison" class="muted">Chargement&hellip;</div>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:18px">
+    <div class="card"><h3>SHAP local &mdash; Waterfall (pourquoi cet AQI ?)</h3><div class="muted small" id="ml-shap-caption"></div><div class="chart-box chart-box-lg"><canvas id="ml-shap-local"></canvas></div>
+      <details class="sci-exp"><summary>&#128218; Explication scientifique compl&egrave;te</summary>
+      <ul><li><b>R&ocirc;le :</b> expliquer <b>une pr&eacute;diction pr&eacute;cise</b> : d&eacute;composer l&rsquo;AQI d&rsquo;une observation en contributions individuelles.</li><li><b>Principe math&eacute;matique :</b> pr&eacute;diction = valeur de base E[f(x)] + somme des &phi;&#7522; (valeurs SHAP locales).</li><li><b>Axes / couleurs :</b> Y = variables, X = AQI ; barre rouge = pousse l&rsquo;AQI vers le haut, barre bleue = vers le bas.</li><li><b>Interpr&eacute;tation :</b> on lit du bas (base) vers le haut (pr&eacute;diction) la cha&icirc;ne des effets.</li><li><b>Limites :</b> valable pour cette instance seulement.</li><li><b>Erreur &agrave; &eacute;viter :</b> g&eacute;n&eacute;raliser une explication locale &agrave; tout le jeu de donn&eacute;es.</li></ul></details></div>
+    <div class="card"><h3>SHAP Decision Plot &mdash; chemin de d&eacute;cision &#9733;</h3><div class="muted small">Trajectoire cumul&eacute;e : de la valeur de base jusqu&rsquo;&agrave; la pr&eacute;diction finale, variable par variable.</div><div class="chart-box chart-box-lg"><canvas id="ml-decision"></canvas></div>
+      <details class="sci-exp"><summary>&#128218; Explication scientifique compl&egrave;te</summary>
+      <ul><li><b>R&ocirc;le :</b> montrer <b>l&rsquo;accumulation</b> des effets menant &agrave; la d&eacute;cision, plus lisible que le Waterfall quand il y a beaucoup de variables.</li><li><b>Principe math&eacute;matique :</b> somme cumul&eacute;e des valeurs SHAP ajout&eacute;es une &agrave; une &agrave; partir de la valeur de base.</li><li><b>Axes / couleurs :</b> Y = AQI cumul&eacute;, X = variables ajout&eacute;es ; point rouge = l&rsquo;&eacute;tape augmente l&rsquo;AQI, bleu = le r&eacute;duit.</li><li><b>Interpr&eacute;tation :</b> une marche verticale marqu&eacute;e signale une variable d&eacute;cisive pour ce cas.</li><li><b>Limites :</b> comme le Waterfall, c&rsquo;est une explication locale.</li><li><b>Erreur &agrave; &eacute;viter :</b> comparer des chemins d&rsquo;instances trop diff&eacute;rentes sans contexte.</li></ul></details></div>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:18px">
+    <div class="card"><h3>DLIME &mdash; explication locale d&eacute;terministe (stable) &#9733;</h3><div class="muted small" id="ml-lime-note"></div><div class="muted small">Vert = r&eacute;duit l&rsquo;AQI &middot; Rouge = augmente l&rsquo;AQI.</div><div class="chart-box chart-box-lg"><canvas id="ml-lime"></canvas></div>
+      <details class="sci-exp"><summary>&#128218; Explication scientifique compl&egrave;te</summary>
+      <ul><li><b>R&ocirc;le :</b> expliquer localement une pr&eacute;diction avec un mod&egrave;le simple, de mani&egrave;re <b>reproductible</b> (contrairement au LIME classique al&eacute;atoire).</li><li><b>Principe math&eacute;matique :</b> DLIME (Zafar &amp; Khan 2019) remplace l&rsquo;&eacute;chantillonnage al&eacute;atoire par un clustering hi&eacute;rarchique + KNN, puis ajuste une r&eacute;gression locale pond&eacute;r&eacute;e &rarr; m&ecirc;me r&eacute;sultat &agrave; chaque ex&eacute;cution.</li><li><b>Axes / couleurs :</b> Y = variables, X = poids local ; rouge = augmente l&rsquo;AQI, vert = le diminue.</li><li><b>Interpr&eacute;tation :</b> pour un jury, la stabilit&eacute; est essentielle : deux ex&eacute;cutions donnent la m&ecirc;me explication.</li><li><b>Limites :</b> approximation locale ; valable dans un petit voisinage de l&rsquo;instance.</li><li><b>Erreur &agrave; &eacute;viter :</b> comparer les poids LIME &agrave; des valeurs SHAP (m&eacute;thodes et &eacute;chelles diff&eacute;rentes).</li></ul></details></div>
+    <div class="card"><h3>&#128200; Recommandations &mdash; analyse IA &agrave; partir des donn&eacute;es r&eacute;elles</h3>
+    <div id="ml-reco-badge" class="muted small" style="margin-bottom:8px"></div>
+    <div id="ml-reco-interp" style="margin-bottom:12px"></div>
+    <div id="ml-reco"><div class="muted">Chargement&hellip;</div></div></div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>Hyperparam&egrave;tres r&eacute;els des mod&egrave;les</h3>
+    <div class="muted small">R&eacute;glages effectivement utilis&eacute;s &agrave; l&rsquo;entra&icirc;nement (lus depuis la base). Aucune m&eacute;trique, aucune valeur invent&eacute;e.</div>
+    <div class="grid grid-2" id="ml-optuna"><div class="muted">Chargement&hellip;</div></div>
+  </div>
+</section>

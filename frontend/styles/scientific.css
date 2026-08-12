@@ -1,0 +1,136 @@
+/* ==========================================================
+   Scientific ML/DL pages — shared styles (institutional / premium)
+   Reuses Nafass design tokens from theme.css.
+   ========================================================== */
+
+.sci-page .page-head .ph-title-block { display: flex; align-items: center; gap: 0; }
+
+.sci-page .chart-box { position: relative; height: 260px; margin-top: 6px; }
+.sci-page .chart-box-lg { height: 340px; }
+
+.sci-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+.sci-table th, .sci-table td { padding: 7px 10px; border-bottom: 1px solid var(--border, #e5e7eb); text-align: left; white-space: nowrap; }
+.sci-table thead th { background: var(--bg-soft, #f1efe8); font-weight: 600; color: var(--muted, #6b7280); text-transform: uppercase; letter-spacing: .03em; font-size: 0.68rem; }
+.sci-table tbody tr:hover td { background: #fbfaf6; }
+.sci-table .cell-best { color: var(--safe, #16a34a); font-weight: 700; }
+.sci-row-best td { background: rgba(22, 163, 74, 0.07); font-weight: 600; }
+.sci-table .delta-pos { color: var(--safe, #16a34a); font-weight: 600; }
+.sci-table .delta-neg { color: var(--danger, #dc2626); font-weight: 600; }
+.small { font-size: 0.78rem; }
+
+/* Best / highlight box */
+.sci-best { background: linear-gradient(135deg, #0d3b66, #1d4e89); color: #fff; border: none; }
+.sci-best h3 { color: rgba(255,255,255,.75); }
+.sci-best-head { display: flex; align-items: center; gap: 14px; }
+.sci-best-check { font-size: 30px; }
+.sci-best-title { text-transform: uppercase; letter-spacing: .06em; font-size: 12px; opacity: .8; }
+.sci-best-name { font-size: 20px; font-weight: 700; }
+.sci-best-metrics { display: flex; flex-wrap: wrap; gap: 22px; margin: 16px 0; }
+.sci-best-metric { display: flex; flex-direction: column; }
+.sci-best-metric span { font-size: 11px; text-transform: uppercase; opacity: .75; letter-spacing: .04em; }
+.sci-best-metric b { font-size: 20px; }
+.sci-best-metric b.pos { color: #7ee2a8; }
+.sci-best-comp { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.sci-chip { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.18); color: #eaf2fb; padding: 4px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 500; }
+
+/* Deep Learning architecture strip */
+.dl-arch { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.dl-node { background: var(--bg-soft, #f1efe8); border: 1px solid var(--border, #e6e3da); border-radius: 10px; padding: 10px 12px; font-weight: 600; font-size: 12.5px; text-align: center; color: var(--ink, #1f2937); }
+.dl-node small { display: block; font-weight: 400; color: var(--muted, #6b7280); font-size: 10.5px; margin-top: 2px; }
+.dl-node.accent { background: var(--primary-3, #e8eef6); border-color: #cdddf0; color: var(--primary, #0d3b66); }
+.dl-node.out { background: var(--safe-bg, #dcfce7); border-color: #bbf0c9; color: #14532d; }
+.dl-arrow { color: var(--muted-2, #9ca3af); font-weight: 700; }
+
+.dl-pred-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin-top: 8px; }
+.dl-pred-card { background: #fff; border: 1px solid var(--border, #e6e3da); border-radius: 10px; padding: 12px 14px; }
+.dl-pred-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.dl-pred-type { margin: 2px 0 6px; text-transform: capitalize; }
+
+.sci-page .forecast-horizons { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px; }
+.sci-page .fh { padding: 8px; border-radius: 8px; text-align: center; background: #f8fafc; }
+.sci-page .fh-safe { background: #ecfdf5; color: #064e3b; }
+.sci-page .fh-warning { background: #fffbeb; color: #78350f; }
+.sci-page .fh-critical { background: #fee2e2; color: #7f1d1d; }
+.sci-page .fh-h { font-size: 0.72rem; opacity: 0.7; }
+.sci-page .fh-v { font-size: 1.4rem; font-weight: 700; }
+.sci-page .fh-l { text-transform: uppercase; font-size: 0.66rem; letter-spacing: 0.03em; }
+
+/* Attention heatmap */
+.attn-wrap { margin-top: 10px; }
+.attn-grid { display: grid; gap: 1px; }
+.attn-cell { width: 100%; aspect-ratio: 1 / 1; border-radius: 1px; }
+.attn-hdr, .attn-rowhdr { font-size: 8px; color: var(--muted, #6b7280); display: flex; align-items: center; justify-content: center; }
+.attn-legend { margin-top: 8px; }
+
+/* Live badge (WebSocket real-time — PART 17.5) */
+.live-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700; letter-spacing: .02em; }
+.live-badge.on  { background: #dcfce7; color: #16a34a; }
+.live-badge.off { background: #f1f5f9; color: #64748b; }
+
+@media (max-width: 720px) {
+  .sci-best-metrics { gap: 14px; }
+  .dl-arch { justify-content: flex-start; }
+  .live-badge { display: none; }
+}
+
+/* --- Formulaire de scenario (Digital Twin) + onglets (Model Registry) --- */
+.sci-form label { display: block; font-size: 0.82rem; color: var(--muted, #64748b); margin-bottom: 10px; }
+.sci-form input { display: block; width: 100%; margin-top: 4px; padding: 8px 10px; font-size: 0.9rem; color: var(--ink, #1f2937); background: #fff; border: 1px solid var(--border, #e5e7eb); border-radius: 8px; box-sizing: border-box; }
+.sci-form input:focus { outline: none; border-color: var(--primary, #0d3b66); box-shadow: 0 0 0 3px rgba(13,59,102,.12); }
+.sci-form-actions { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.sci-form .hint, .sci-tabs .hint { font-size: 0.78rem; color: var(--muted, #64748b); }
+.sci-tabs { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.btn.ghost { background: transparent; color: var(--primary, #0d3b66); border: 1px solid var(--border, #e5e7eb); }
+.dt-svg { width: 100%; height: auto; }
+.dt-axis { font-size: 0.72rem; color: var(--muted, #64748b); margin-top: 6px; text-align: center; }
+.dt-empty, .mr-empty { color: var(--muted, #64748b); font-size: 0.85rem; padding: 6px 0; }
+
+
+/* ============================================================================
+   R179 — Explications scientifiques : design moderne (BI-like)
+   ============================================================================ */
+.sci-exp{margin-top:12px;border:1px solid #e5e9f0;border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 2px 10px rgba(16,24,40,.05)}
+.sci-exp>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px 15px;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(120deg,#0d3b66,#1d4e89);letter-spacing:.2px}
+.sci-exp>summary::-webkit-details-marker{display:none}
+.sci-exp>summary::before{content:"";width:26px;height:26px;border-radius:8px;flex:0 0 auto;background:rgba(255,255,255,.16) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'/%3E%3Cpath d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'/%3E%3C/svg%3E") no-repeat center/16px}
+.sci-exp>summary::after{content:"\25B8";margin-left:auto;transition:transform .2s;opacity:.85;font-size:12px}
+.sci-exp[open]>summary::after{transform:rotate(90deg)}
+.sci-exp[open]>summary{border-bottom:1px solid #e5e9f0}
+.sci-exp>ul{margin:0;padding:14px 16px;list-style:none;display:grid;gap:9px;animation:sciExpIn .25s ease}
+@keyframes sciExpIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.sci-exp>ul>li{position:relative;padding-left:24px;font-size:13px;line-height:1.6;color:#2a3346}
+.sci-exp>ul>li::before{content:"";position:absolute;left:5px;top:7px;width:9px;height:9px;border-radius:3px;background:linear-gradient(135deg,#1d4e89,#3b82f6)}
+.sci-exp>ul>li b{color:#0d3b66}
+.pf2-dark .sci-exp,.df-dark .sci-exp{background:#242526;border-color:#3a3b3c}
+.pf2-dark .sci-exp>ul>li{color:#d5d8dd}
+
+/* ============================================================================
+   R179 — Comparaison scientifique ML (TreeSHAP vs DeepSHAP), style BI
+   ============================================================================ */
+.mlcmp{display:grid;gap:14px}
+.mlcmp-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.mlcmp-cols{grid-template-columns:1fr}}
+.mlcmp-card{border:1px solid #eceef3;border-radius:12px;padding:12px 14px;background:#fcfdff}
+.mlcmp-card.acc-slate{border-left:3px solid #64748b}
+.mlcmp-card.acc-violet{border-left:3px solid #7c3aed}
+.mlcmp-h{font-size:13px;font-weight:800;color:#0d3b66;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.mlcmp-sub{font-size:11px;font-weight:600;color:#64748b;background:#eef1f6;padding:1px 8px;border-radius:999px}
+.mlcmp-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.mlcmp-list li{display:flex;align-items:center;gap:9px;font-size:13px;color:#2a3346}
+.mlcmp-rank{flex:0 0 auto;width:20px;height:20px;border-radius:6px;background:#0d3b66;color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+.mlcmp-tag{font-size:10px;font-weight:700;color:#7c3aed;background:#f3e8ff;padding:1px 7px;border-radius:999px}
+.mlcmp-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:640px){.mlcmp-metrics{grid-template-columns:1fr}}
+.mlcmp-metric{border:1px solid #eceef3;border-radius:11px;padding:11px 12px;background:#fff;display:flex;flex-direction:column;gap:5px}
+.mlcmp-mlbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#64748b}
+.mlcmp-mval{font-size:20px;font-weight:800;color:#0d3b66}
+.mlcmp-meter{height:6px;border-radius:999px;background:#eceef3;overflow:hidden}
+.mlcmp-meter i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#1d4e89,#3b82f6)}
+.mlcmp-interp{display:flex;gap:10px;align-items:flex-start;background:#f4f8ff;border:1px solid #dbe7fb;border-left:4px solid #1d4e89;border-radius:10px;padding:12px 14px}
+.mlcmp-interp svg{color:#1d4e89;flex:0 0 auto;margin-top:2px}
+.mlcmp-interp p{margin:0;font-size:13px;line-height:1.6;color:#243044}
+.mlcmp-interp b{color:#0d3b66}
+.mlcmp-empty{color:#64748b;font-size:13px;padding:8px}
+.mlcmp .cix-chip{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:700;width:fit-content}
+.mlcmp .c-lo{background:#e7f6ee;color:#15803d}.mlcmp .c-md{background:#fef3c7;color:#92400e}.mlcmp .c-hi{background:#ffedd5;color:#c2410c}
+.pf2-dark .mlcmp-card,.pf2-dark .mlcmp-metric{background:#2b2c2d;border-color:#3a3b3c}

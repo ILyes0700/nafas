@@ -1,0 +1,44 @@
+<section class="page sci-page dt-page" id="page-digital-twin">
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      </div>
+      <div>
+        <h1>Digital Twin — Simulation « et si »</h1>
+        <div class="ph-sub">Simulez l'impact d'un scénario (fermeture d'usine, pic de vent) sur l'AQI des prochaines heures à Gabès. Panache gaussien + inertie temporelle.</div>
+      </div>
+    </div>
+    <div class="ph-actions"><span class="pill info">Scientific ML — Admin</span></div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card sci-form">
+      <h3>Paramètres du scénario</h3>
+      <label>Nom <input id="dt-name" type="text" value="Fermeture usine Ghannouche"></label>
+      <label>Zone ID <input id="dt-zone" type="number" value="3" min="1"></label>
+      <label>AQI de départ <input id="dt-base" type="number" value="120" min="0"></label>
+      <label>Réduction à la source (%) <input id="dt-red" type="number" value="80" min="0" max="100"></label>
+      <label>Vitesse du vent (m/s) <input id="dt-wind" type="number" value="5" min="0" step="0.5"></label>
+      <label>Distance à la source (m) <input id="dt-dist" type="number" value="800" min="1"></label>
+      <label>Horizon (heures) <input id="dt-hours" type="number" value="24" min="1" max="72"></label>
+      <div class="sci-form-actions">
+        <button class="btn" id="dt-run">Simuler</button>
+        <span class="hint" id="dt-hint"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Courbe AQI simulée <span class="pill info" id="dt-conf"></span></h3>
+      <div class="chart-box chart-box-lg" id="dt-chart"><p class="muted">Lancez une simulation pour voir la courbe.</p></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>Scénarios enregistrés</h3>
+    <table class="sci-table">
+      <thead><tr><th>Nom</th><th>Zone</th><th>Confiance</th><th>Date</th></tr></thead>
+      <tbody id="dt-history"><tr><td colspan="4" class="muted">Chargement…</td></tr></tbody>
+    </table>
+  </div>
+</section>

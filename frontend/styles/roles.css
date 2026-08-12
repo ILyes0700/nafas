@@ -1,0 +1,25 @@
+/* Visibilité par rôle — l'app simule les permissions sans authentification.
+   Chaque page peut tagguer un élément avec data-role="health admin" pour
+   le rendre visible uniquement par ces rôles. */
+
+[data-role-only]:not([data-role-only~="*"]) { display: none; }
+
+body[data-role="citizen"] [data-role-only~="citizen"],
+body[data-role="health"]  [data-role-only~="health"],
+body[data-role="school"]  [data-role-only~="school"],
+body[data-role="admin"]   [data-role-only~="admin"]   { display: revert; }
+
+/* Bandeau de rôle */
+.role-bar {
+  background: var(--primary-3);
+  color: var(--primary);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+  font-weight: 600;
+  display: flex; align-items: center; justify-content: space-between;
+  border: 1px solid #d6e0ee;
+}
+body[data-role="health"] .role-bar { background: #e8f4ee; color: #166534; border-color: #cbe9d8; }
+body[data-role="school"] .role-bar { background: #fff4e0; color: #9a3412; border-color: #fbd9a3; }
+body[data-role="admin"]  .role-bar { background: #ede9fe; color: #5b21b6; border-color: #d6cdfb; }

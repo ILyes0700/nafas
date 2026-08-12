@@ -1,0 +1,40 @@
+<section class="page sci-page federated-page" id="page-federated">
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 6.5l3 3M17 6.5l-3 3M7 17.5l3-3M17 17.5l-3-3"/></svg>
+      </div>
+      <div>
+        <h1>Apprentissage Fédéré (FedAvg) <span class="pill info">Optionnel</span></h1>
+        <div class="ph-sub">Chaque ville entraîne son modèle local et partage uniquement les poids (pas les données brutes). Agrégation FedAvg (McMahan et al., 2017).</div>
+      </div>
+    </div>
+    <div class="ph-actions"><span id="fd-demo-badge" class="pill info" style="display:none">⚠ Modèle non entraîné</span><button class="btn" id="fd-refresh">Rafraîchir</button></div>
+  </div>
+
+  <div class="card" id="fd-explain" style="margin-bottom:18px"><h3>À quoi sert l'apprentissage fédéré ?</h3><div class="muted" id="fd-explain-body">Chargement…</div></div>
+
+  <div class="card sci-best" id="fd-privacy"><div class="muted">Chargement…</div></div>
+
+  <div class="grid grid-2" style="margin-top:18px">
+    <div class="card"><h3>Convergence (RMSE global par round)</h3><div class="chart-box chart-box-lg"><canvas id="fd-conv"></canvas></div></div>
+    <div class="card"><h3>Contribution par ville (échantillons)</h3><div class="chart-box chart-box-lg"><canvas id="fd-contrib"></canvas></div></div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>Comparaison Standalone vs Fédéré</h3>
+    <div class="table-wrap" style="margin-top:8px"><table class="basic-table sci-table" id="fd-table">
+      <thead><tr><th>Mode d'entraînement</th><th>RMSE</th><th>F1</th><th>R²</th></tr></thead>
+      <tbody><tr><td colspan="4" class="muted">Chargement…</td></tr></tbody>
+    </table></div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>Détail par round d'agrégation FedAvg</h3>
+    <div class="muted small">À chaque round, le serveur agrège les poids locaux → le modèle global s'améliore (RMSE baisse, F1 monte).</div>
+    <div class="table-wrap" style="margin-top:8px"><table class="basic-table sci-table" id="fd-rounds">
+      <thead><tr><th>Round</th><th>RMSE global</th><th>F1 global</th></tr></thead>
+      <tbody><tr><td colspan="3" class="muted">Chargement…</td></tr></tbody>
+    </table></div>
+  </div>
+</section>

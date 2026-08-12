@@ -1,0 +1,168 @@
+/* =====================================================
+ *  Nafass · Mobile / phone-sized layout
+ *  Hamburger sidebar + responsive layout for ≤768px
+ * ===================================================== */
+
+/* Burger button (hidden on desktop, shown on mobile) */
+.sidebar-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px; height: 40px;
+  margin-right: 10px;
+  border: 1px solid var(--border, #d6dde6);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  color: var(--ink, #102a43);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background .15s, transform .12s;
+}
+.sidebar-toggle:hover { background: var(--bg-soft, #f3f6fa); }
+.sidebar-toggle:active { transform: scale(.94); }
+
+/* Overlay (hidden until sidebar opens on mobile) */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 24, 48, .55);
+  z-index: 90;
+  opacity: 0;
+  transition: opacity .25s ease;
+  backdrop-filter: blur(2px);
+}
+.sidebar-overlay.show {
+  display: block;
+  opacity: 1;
+}
+
+/* ============= Phone layout ============= */
+@media (max-width: 768px) {
+
+  .sidebar-toggle { display: inline-flex; }
+
+  /* App stops being a 2-col grid */
+  .app {
+    grid-template-columns: 1fr;
+  }
+
+  /* Sidebar slides in from the left */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 78%;
+    max-width: 320px;
+    z-index: 100;
+    transform: translateX(-105%);
+    transition: transform .28s cubic-bezier(.2,.7,.2,1);
+    box-shadow: 4px 0 24px rgba(0,0,0,.18);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .sidebar.open { transform: translateX(0); }
+
+  /* Topbar trim for small screens */
+  .topbar {
+    padding: 0 12px;
+    gap: 8px;
+  }
+  .topbar h1 { font-size: 15px; }
+  .topbar .subtitle { font-size: 11px; line-height: 1.25; }
+  .topbar > div:first-of-type {
+    /* allow page title to take remaining space */
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .topbar h1, .topbar .subtitle {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .topbar-right {
+    gap: 6px;
+  }
+  .topbar-right > div[style*="text-align:right"] {
+    display: none; /* hide username block on tiny screens */
+  }
+
+  /* Reduce main padding for phones */
+  .main { padding: 14px 12px 80px; }
+
+  /* Cards & inputs more comfortable for thumbs */
+  .card { padding: 14px; border-radius: 14px; }
+  input, select, textarea, button {
+    font-size: 16px; /* prevent iOS zoom on focus */
+  }
+  .btn, button.btn, .btn-primary, .btn-secondary {
+    min-height: 42px;
+  }
+
+  /* Notification panel takes full width on phones */
+  .notif-panel {
+    position: fixed !important;
+    right: 8px !important;
+    left: 8px !important;
+    top: var(--topbar-h, 56px) !important;
+    width: auto !important;
+    max-height: 70vh;
+  }
+
+  /* Page-grid: collapse multi-col grids */
+  .grid, .grid-4, .grid-3, .grid-2 {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  /* Map page – Time Machine card friendlier */
+  .map-time-card { padding: 14px !important; }
+  .mtc-tabs { flex-wrap: wrap; }
+  .mtc-tab { flex: 1 1 30%; }
+
+  /* Leaflet map height on phones */
+  #map, .leaflet-container { min-height: 380px; }
+
+  /* Diary AI card */
+  .diary-ai-card { padding: 14px !important; }
+
+  /* Forms: stack labels above inputs on phone */
+  form .form-row, .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* === Tiny phones (≤380px) === */
+@media (max-width: 380px) {
+  .topbar h1 { font-size: 14px; }
+  .topbar .subtitle { display: none; }
+  .role-badge { display: none; }
+  .main { padding: 10px 8px 70px; }
+}
+
+/* === Mobile-app specific (Capacitor APK) === */
+body.is-mobile-app {
+  /* respect status bar / nav bar safe areas */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+body.is-mobile-app .sidebar { padding-top: env(safe-area-inset-top); }
+body.is-mobile-app .topbar  { padding-top: env(safe-area-inset-top); }
+
+/* Offline banner */
+.offline-banner {
+  position: fixed;
+  bottom: 12px; left: 12px; right: 12px;
+  z-index: 200;
+  background: #f59e0b;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 6px 22px rgba(245,158,11,.35);
+  display: none;
+  text-align: center;
+}
+.offline-banner.show { display: block; }

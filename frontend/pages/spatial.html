@@ -1,0 +1,27 @@
+<section class="page sci-page spatial-page" id="page-spatial">
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"/><path d="M12 22v-6"/><path d="M2 12h6"/><path d="M22 12h-6"/><path d="M7 7l3 3"/><path d="M17 7l-3 3"/><circle cx="12" cy="12" r="2"/></svg>
+      </div>
+      <div>
+        <h1>Propagation Spatiale de la Pollution</h1>
+        <div class="ph-sub">Diffusion de la pollution entre les zones de Gabès selon le vent réel (direction &amp; vitesse actuelles). Les couples source → cible ci-dessous sont calculés dynamiquement à partir du vent mesuré et des distances GPS réelles.</div>
+      </div>
+    </div>
+    <div class="ph-actions"><span id="sp-demo-badge" class="pill info" style="display:none">⚠ Modèle non entraîné</span><button class="btn" id="sp-refresh">Rafraîchir</button></div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card"><h3>Vent actuel</h3><div class="value" id="sp-wind">—</div><div class="hint">direction &amp; vitesse</div></div>
+    <div class="card"><h3>AQI local vs ajusté (propagation)</h3><div class="chart-box"><canvas id="sp-adj"></canvas></div></div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>Contributions de propagation (source → cible)</h3>
+    <div class="table-wrap" style="margin-top:8px"><table class="basic-table sci-table" id="sp-edges">
+      <thead><tr><th>Source</th><th>Cible</th><th>Alignement vent</th><th>Distance (km)</th><th>Contribution AQI</th></tr></thead>
+      <tbody><tr><td colspan="5" class="muted">Chargement…</td></tr></tbody>
+    </table></div>
+  </div>
+</section>

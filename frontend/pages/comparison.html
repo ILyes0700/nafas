@@ -1,0 +1,111 @@
+<section class="page sci-page comparison-page" id="page-comparison">
+
+  <!-- HEADER UNIFIE -->
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 3v18h18"/><rect x="6" y="10" width="3" height="8" rx="1"/><rect x="11" y="6" width="3" height="12" rx="1"/><rect x="16" y="13" width="3" height="5" rx="1"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Tableau de bord — Comparaison des modèles</h1>
+        <div class="ph-sub">Métriques complètes, multi-horizon, étude d'ablation, tests de significativité (Wilcoxon) et comparaison avec la littérature. Cible : Soft Computing (Springer).</div>
+      </div>
+    </div>
+    <div class="ph-actions">
+      <span id="cmp-demo-badge" class="pill info" style="display:none">⚠ Modèle non entraîné</span>
+      <button class="btn" id="cmp-refresh">Rafraîchir</button>
+    </div>
+  </div>
+
+  <!-- BEST MODEL BOX -->
+  <div class="card sci-best" id="cmp-best">
+    <div class="muted">Chargement…</div>
+  </div>
+
+  <!-- 1. MASTER METRICS TABLE -->
+  <div class="card">
+    <h3>1. Tableau maître des métriques — horizon +1h</h3>
+    <div class="muted small">Vert = meilleur · ✅ = recommandé. RMSE/MAE plus bas = mieux ; F1/R²/AUC plus haut = mieux.</div>
+    <div class="table-wrap" style="margin-top:8px">
+      <table class="basic-table sci-table" id="cmp-master">
+        <thead><tr>
+          <th>Modèle</th><th>Acc %</th><th>Prec</th><th>Rec</th><th>F1</th><th>MAE</th>
+          <th>RMSE</th><th>MAPE</th><th>SMAPE</th><th>R²</th><th>AUC</th><th>Lat (ms)</th>
+        </tr></thead>
+        <tbody><tr><td colspan="12" class="muted">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW A -->
+  <div class="grid grid-3" style="margin-top:18px">
+    <div class="card"><h3>F1 par modèle</h3><div class="chart-box"><canvas id="cmp-f1"></canvas></div></div>
+    <div class="card"><h3>RMSE par modèle</h3><div class="chart-box"><canvas id="cmp-rmse"></canvas></div></div>
+    <div class="card"><h3>Latence (ms) par modèle</h3><div class="chart-box"><canvas id="cmp-lat"></canvas></div></div>
+  </div>
+
+  <!-- 2. MULTI-HORIZON TABLE -->
+  <div class="card" style="margin-top:18px">
+    <h3>2. Comparaison multi-horizon (+1h / +6h / +24h)</h3>
+    <div class="muted small">La performance se dégrade quand l'horizon augmente — prédiction plus difficile.</div>
+    <div class="table-wrap" style="margin-top:8px">
+      <table class="basic-table sci-table" id="cmp-horizon">
+        <thead>
+          <tr><th rowspan="2">Modèle</th><th colspan="3">Horizon +1h</th><th colspan="3">Horizon +6h</th><th colspan="3">Horizon +24h</th></tr>
+          <tr><th>RMSE</th><th>F1</th><th>AUC</th><th>RMSE</th><th>F1</th><th>AUC</th><th>RMSE</th><th>F1</th><th>AUC</th></tr>
+        </thead>
+        <tbody><tr><td colspan="10" class="muted">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="chart-box" style="margin-top:14px"><canvas id="cmp-degrade"></canvas></div>
+  </div>
+
+  <!-- 3. ABLATION STUDY -->
+  <div class="card" style="margin-top:18px">
+    <h3>3. Étude d'ablation — contribution de chaque composant</h3>
+    <div class="muted small">Chaque composant doit apporter ≥ 3 % d'amélioration (exigence Springer).</div>
+    <div class="table-wrap" style="margin-top:8px">
+      <table class="basic-table sci-table" id="cmp-ablation">
+        <thead><tr><th>Configuration</th><th>RMSE</th><th>Δ RMSE</th><th>F1</th><th>Δ F1</th><th>R²</th><th>AUC</th></tr></thead>
+        <tbody><tr><td colspan="7" class="muted">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="chart-box" style="margin-top:14px"><canvas id="cmp-ablation-chart"></canvas></div>
+  </div>
+
+  <!-- 4 + 5 SIGNIFICANCE + LITERATURE -->
+  <div class="grid grid-2" style="margin-top:18px">
+    <div class="card">
+      <h3>4. Tests de significativité (Wilcoxon)</h3>
+      <div class="table-wrap" style="margin-top:8px">
+        <table class="basic-table sci-table" id="cmp-sig">
+          <thead><tr><th>Comparaison</th><th>Statistique</th><th>p-value</th><th>Significatif</th></tr></thead>
+          <tbody><tr><td colspan="4" class="muted">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h3>5. Comparaison avec la littérature</h3>
+      <div class="table-wrap" style="margin-top:8px">
+        <table class="basic-table sci-table" id="cmp-lit">
+          <thead><tr><th>Étude</th><th>Année</th><th>Méthode</th><th>RMSE</th><th>F1</th></tr></thead>
+          <tbody><tr><td colspan="5" class="muted">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW B -->
+  <div class="grid grid-2" style="margin-top:18px">
+    <div class="card"><h3>Profil radar des modèles</h3><div class="chart-box"><canvas id="cmp-radar"></canvas></div></div>
+    <div class="card"><h3>Convergence Optuna (RMSE)</h3><div class="chart-box"><canvas id="cmp-optuna"></canvas></div></div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>Prédiction vs réel — meilleur modèle (72h)</h3>
+    <div class="chart-box chart-box-lg"><canvas id="cmp-series"></canvas></div>
+  </div>
+
+</section>

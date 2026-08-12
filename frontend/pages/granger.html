@@ -1,0 +1,30 @@
+<section class="page sci-page granger-page" id="page-granger">
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><path d="M7 12h10"/><path d="M14 9l3 3-3 3"/></svg>
+      </div>
+      <div>
+        <h1>Causalité de Granger</h1>
+        <div class="ph-sub">Prouve statistiquement quelles variables causent quelles autres dans la pollution de Gabès (contexte industriel SIAPE/GCT).</div>
+      </div>
+    </div>
+    <div class="ph-actions"><span id="gr-demo-badge" class="pill info" style="display:none">⚠ Modèle non entraîné</span><button class="btn" id="gr-refresh">Rafraîchir</button></div>
+  </div>
+
+  <div class="card">
+    <h3>Analyse de causalité — Gabès</h3>
+    <div class="table-wrap" style="margin-top:8px"><table class="basic-table sci-table" id="gr-table">
+      <thead><tr><th>Relation</th><th>Lag optimal</th><th>F-stat</th><th>p-value</th><th>Résultat</th></tr></thead>
+      <tbody><tr><td colspan="5" class="muted">Chargement…</td></tr></tbody>
+    </table></div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>Lag vs p-value par relation</h3>
+    <div class="muted small">Ligne rouge = seuil de significativité (p = 0.05).</div>
+    <div class="chart-box chart-box-lg"><canvas id="gr-lag"></canvas></div>
+  </div>
+
+  <div class="card sci-best" id="gr-interp" style="margin-top:18px"><div class="muted">Chargement…</div></div>
+</section>

@@ -1,0 +1,22 @@
+<section class="page sci-page smartalerts-page" id="page-smart-alerts">
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 003.4 0"/><path d="M12 2v2"/></svg>
+      </div>
+      <div>
+        <h1>Moteur d'Alertes Intelligentes</h1>
+        <div class="ph-sub">Alertes prédictives (INFO / WARNING / CRITICAL) avec explication SHAP + LIME + attention, et recommandations sanitaires.</div>
+      </div>
+    </div>
+    <div class="ph-actions"><span id="sa-demo-badge" class="pill info" style="display:none">⚠ Modèle non entraîné</span><button class="btn" id="sa-refresh">Rafraîchir</button></div>
+  </div>
+
+  <div class="grid grid-3" id="sa-counts">
+    <div class="card"><h3>Critical</h3><div class="value" id="sa-c" style="color:var(--danger)">—</div></div>
+    <div class="card"><h3>Warning</h3><div class="value" id="sa-w" style="color:var(--warning)">—</div></div>
+    <div class="card"><h3>Info</h3><div class="value" id="sa-i" style="color:var(--primary)">—</div></div>
+  </div>
+
+  <div id="sa-list" style="margin-top:18px"><div class="card"><div class="muted">Chargement…</div></div></div>
+</section>

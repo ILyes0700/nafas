@@ -1,0 +1,403 @@
+/* ============================================================
+   SCHOOL MODE — design aligné sur theme.css / dashboard.css / reports.css
+   Palette projet uniquement : navy + or + vert + rouge (via CSS vars)
+   Aucune nouvelle couleur, aucun emoji, icônes SVG Lucide.
+   ============================================================ */
+
+.school-page { display: flex; flex-direction: column; gap: 18px; }
+
+/* ----- HERO (gradient navy, cohérent Dashboard) ----- */
+.school-hero {
+  position: relative;
+  display: flex; align-items: center; gap: 18px;
+  background: linear-gradient(135deg, var(--primary) 0%, #1d4f87 100%);
+  color: #fff;
+  border-radius: 18px;
+  padding: 22px 26px;
+  box-shadow: 0 10px 28px rgba(13, 59, 102, 0.18);
+  overflow: hidden;
+}
+.school-hero::before {
+  content: ''; position: absolute; right: -40px; top: -40px;
+  width: 220px; height: 220px; border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+}
+.school-hero .sh-icon {
+  width: 56px; height: 56px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.14);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; position: relative; z-index: 1;
+}
+.school-hero .sh-icon svg { width: 28px; height: 28px; color: #fff; }
+
+.school-hero .sh-body { flex: 1; min-width: 0; position: relative; z-index: 1; }
+.school-hero .sh-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .04em; color: rgba(255,255,255,.75); text-transform: uppercase; }
+.school-hero .sh-title   { font-size: 22px; font-weight: 800; margin: 4px 0 4px; line-height: 1.2; }
+.school-hero .sh-sub     { font-size: 13px; color: rgba(255,255,255,.80); line-height: 1.55; max-width: 640px; }
+
+.school-hero .sh-right {
+  display: flex; flex-direction: column; gap: 10px; align-items: flex-end;
+  position: relative; z-index: 1;
+}
+.school-hero .sh-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  background: rgba(255,255,255,0.16); color: #fff;
+}
+.school-hero .sh-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; }
+.school-hero .sh-badge.safe     .dot { background: var(--safe); }
+.school-hero .sh-badge.warning  .dot { background: var(--warning); }
+.school-hero .sh-badge.danger   .dot,
+.school-hero .sh-badge.critical .dot { background: var(--danger); }
+
+.school-hero .sh-score     { display: flex; align-items: baseline; gap: 8px; color: #fff; }
+.school-hero .sh-score-num { font-size: 36px; font-weight: 800; line-height: 1; }
+.school-hero .sh-score-lbl { font-size: 12px; color: rgba(255,255,255,.75); }
+
+.school-hero .sh-bar {
+  width: 180px; height: 6px; border-radius: 999px;
+  background: rgba(255,255,255,0.18); overflow: hidden;
+}
+.school-hero .sh-bar > span { display: block; height: 100%; background: #fff; transition: width .4s; }
+.school-hero .sh-hint { font-size: 12px; color: rgba(255,255,255,.80); max-width: 260px; text-align: right; }
+
+/* ----- Banner critique (sobre, couleur du thème) ----- */
+.school-banner {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--danger-bg);
+  border: 1px solid #fca5a5;
+  border-left: 4px solid var(--danger);
+  padding: 14px 18px; border-radius: var(--radius);
+  color: var(--critical);
+}
+.school-banner .sb-icon {
+  width: 36px; height: 36px; flex-shrink: 0;
+  border-radius: 10px;
+  background: #fff; color: var(--danger);
+  display: flex; align-items: center; justify-content: center;
+}
+.school-banner .sb-icon svg { width: 20px; height: 20px; }
+.school-banner .sb-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.school-banner .sb-text strong { font-size: 14px; }
+.school-banner .sb-text span   { font-size: 12.5px; opacity: .85; }
+
+/* ----- Stats cards (style Dashboard KPI) ----- */
+.school-stats {
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px;
+}
+.ss-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 8px;
+  transition: transform .15s, box-shadow .15s;
+}
+.ss-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(13, 59, 102, 0.07); }
+.ss-card .ss-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ss-card .ss-ico {
+  width: 32px; height: 32px; border-radius: 10px;
+  background: var(--primary-3); color: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.ss-card .ss-ico svg { width: 16px; height: 16px; }
+.ss-card .ss-num { font-size: 24px; font-weight: 800; color: var(--ink); line-height: 1; }
+.ss-card .ss-lbl { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+
+.ss-card.warn   .ss-ico { background: var(--warning-bg); color: var(--warning); }
+.ss-card.danger .ss-ico { background: var(--danger-bg);  color: var(--danger); }
+.ss-card.crit   .ss-ico { background: var(--danger-bg);  color: var(--critical); }
+.ss-card.green  .ss-ico { background: var(--safe-bg);    color: var(--safe); }
+
+@media (max-width: 1100px) {
+  .school-stats { grid-template-columns: repeat(3, 1fr); }
+  .school-hero  { flex-direction: column; align-items: flex-start; }
+  .school-hero .sh-right { align-items: flex-start; width: 100%; }
+  .school-hero .sh-bar   { width: 100%; }
+  .school-hero .sh-hint  { text-align: left; max-width: none; }
+}
+
+/* ----- Actions row ----- */
+.school-actions-row { gap: 14px; }
+.school-actions p,
+.school-broadcast p { font-size: 13px; color: var(--muted); margin: 0; }
+.school-actions .row { gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+
+.school-broadcast textarea {
+  width: 100%; resize: vertical; min-height: 80px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 10px 12px; font-family: inherit; font-size: 14px;
+  background: var(--bg-soft); color: var(--ink);
+  transition: border-color .15s, box-shadow .15s, background .15s;
+}
+.school-broadcast textarea:focus {
+  outline: 0; border-color: var(--primary); background: var(--surface);
+  box-shadow: 0 0 0 3px var(--primary-3);
+}
+
+/* ----- Chips de filtre ----- */
+.school-page .chip {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 5px 12px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; color: var(--muted);
+  cursor: pointer; transition: all .12s;
+}
+.school-page .chip:hover { background: var(--bg-soft); color: var(--primary); }
+.school-page .chip.active {
+  background: var(--primary); color: #fff; border-color: var(--primary);
+}
+
+/* ----- Grille des écoles (style rep-card) ----- */
+.schools-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px;
+}
+.school-card {
+  position: relative;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 18px;
+  display: flex; flex-direction: column; gap: 10px;
+  transition: box-shadow .15s, transform .15s, border-color .15s;
+  overflow: hidden;
+}
+.school-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--primary); opacity: 0; transition: opacity .15s;
+}
+.school-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(13, 59, 102, 0.08); border-color: #cbd5e1; }
+.school-card:hover::before { opacity: 1; }
+
+.school-card.normal::before    { background: var(--safe); }
+.school-card.vigilance::before { background: var(--warning); }
+.school-card.danger::before    { background: var(--danger); }
+.school-card.suspended::before { background: var(--critical); opacity: 1; }
+.school-card.suspended         { background: #fdf6f6; }
+
+.school-card .sc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.school-card .sc-name { font-weight: 700; color: var(--ink); font-size: 15px; }
+.school-card .sc-zone { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.school-card .sc-meta {
+  display: flex; gap: 14px; flex-wrap: wrap;
+  font-size: 12px; color: var(--ink-soft);
+  padding-top: 4px; border-top: 1px solid var(--border-2);
+}
+.school-card .sc-meta b { color: var(--ink); font-size: 13px; }
+.school-card .sc-notes { font-size: 12px; color: var(--muted); font-style: italic; }
+.school-card .sc-actions {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  padding-top: 10px; border-top: 1px solid var(--border-2);
+}
+.school-card .sc-actions .btn { font-size: 12px; padding: 6px 10px; gap: 4px; }
+.school-card .sc-actions .btn svg { width: 13px; height: 13px; }
+
+/* ----- Protocole (détails déroulants) ----- */
+.school-protocol details {
+  border-bottom: 1px solid var(--border-2);
+  padding: 10px 0;
+}
+.school-protocol details:last-of-type { border-bottom: 0; }
+.school-protocol summary {
+  cursor: pointer; font-weight: 600; font-size: 14px; color: var(--ink);
+  display: flex; align-items: center; gap: 10px;
+  list-style: none;
+}
+.school-protocol summary::-webkit-details-marker { display: none; }
+.school-protocol summary::before {
+  content: ''; width: 6px; height: 6px;
+  border-right: 2px solid var(--muted-2); border-bottom: 2px solid var(--muted-2);
+  transform: rotate(-45deg); transition: transform .15s;
+}
+.school-protocol details[open] summary::before { transform: rotate(45deg); }
+.school-protocol ul {
+  margin: 10px 0 6px 22px;
+  color: var(--ink-soft); font-size: 13px; line-height: 1.65;
+}
+.school-protocol li { margin-bottom: 4px; }
+
+/* ----- Historique alertes (style inbox alerts) ----- */
+.school-history-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 0; border-bottom: 1px solid var(--border-2);
+}
+.school-history-item:last-child { border-bottom: 0; }
+.school-history-item .shi-dot {
+  width: 10px; height: 10px; border-radius: 999px;
+  flex-shrink: 0; margin-top: 6px;
+}
+.school-history-item .shi-dot.info,
+.school-history-item .shi-dot.default  { background: var(--primary); }
+.school-history-item .shi-dot.warning  { background: var(--warning); }
+.school-history-item .shi-dot.danger   { background: var(--danger); }
+.school-history-item .shi-dot.critical { background: var(--critical); }
+.school-history-item .shi-body  { flex: 1; }
+.school-history-item .shi-title { font-weight: 600; font-size: 13px; color: var(--ink); }
+.school-history-item .shi-meta  { font-size: 11px; color: var(--muted-2); margin-top: 2px; }
+.school-history-item .shi-msg   { font-size: 12.5px; color: var(--ink-soft); margin-top: 4px; }
+/* ============================================================
+   SCHOOL MODE — Module "Saisie des absents"
+   Design aligné sur school.css / theme.css (navy + or + vert + rouge)
+   À inclure APRÈS school.css.
+   ============================================================ */
+
+.school-absences .muted { color: var(--muted, #6b7280); font-size: 13px; }
+
+/* ============================================================
+   FIX GLOBAL — taille des icônes SVG dans les boutons de la page école
+   (Sans cette règle, les SVG sans width/height s'étirent à 300x150px
+   et rendent les boutons énormes.)
+   ============================================================ */
+.school-page .btn {
+  font-size: 13px;
+  padding: 8px 14px;
+  gap: 8px;
+}
+.school-page .btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.school-page .btn.primary,
+.school-page .btn.danger,
+.school-page .btn.warning {
+  font-weight: 600;
+}
+/* Boutons "Actions rapides" un peu plus imposants mais raisonnables */
+.school-page .school-actions .btn,
+.school-page .school-broadcast .btn {
+  padding: 10px 16px;
+  font-size: 13px;
+}
+.school-page .school-actions .btn svg,
+.school-page .school-broadcast .btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ---------- Formulaire ---------- */
+.absence-form {
+  background: #fff;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 14px;
+  padding: 18px 18px 14px;
+  margin-top: 6px;
+}
+.absence-form .af-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+.absence-form .af-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.absence-form .af-field-wide { grid-column: span 3; }
+.absence-form label {
+  font-size: 12px; font-weight: 600;
+  color: var(--primary, #0d3b66);
+  letter-spacing: .02em;
+}
+.absence-form input,
+.absence-form select {
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 14px;
+  background: #fff;
+  color: #0f172a;
+  transition: border-color .15s, box-shadow .15s;
+}
+.absence-form input:focus,
+.absence-form select:focus {
+  outline: none;
+  border-color: var(--primary, #0d3b66);
+  box-shadow: 0 0 0 3px rgba(13, 59, 102, 0.12);
+}
+
+@media (max-width: 900px) {
+  .absence-form .af-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .absence-form .af-field-wide { grid-column: span 2; }
+}
+@media (max-width: 560px) {
+  .absence-form .af-grid { grid-template-columns: 1fr; }
+  .absence-form .af-field-wide { grid-column: span 1; }
+}
+
+/* ---------- Date filter (entête de liste) ---------- */
+.school-absences input[type="date"] {
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+/* ---------- Liste des absences ---------- */
+.absence-list {
+  display: flex; flex-direction: column;
+  gap: 8px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.absence-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+  background: #fbfbfa;
+  transition: background-color .15s, border-color .15s;
+}
+.absence-item:hover {
+  background: #f5f3ec;
+  border-color: #d8d3c0;
+}
+.absence-item .ai-main { flex: 1; min-width: 0; }
+.absence-item .ai-name {
+  font-weight: 700; font-size: 14px;
+  color: #0f172a;
+  line-height: 1.3;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.absence-item .ai-meta {
+  display: flex; flex-wrap: wrap; gap: 4px 10px;
+  font-size: 12px; color: #6b7280; margin-top: 3px;
+}
+.absence-item .ai-meta .ai-school { font-weight: 600; color: var(--primary, #0d3b66); }
+.absence-item .ai-meta .ai-class {
+  background: #eef2f7; padding: 1px 7px; border-radius: 999px;
+  color: #334155; font-weight: 500;
+}
+.absence-item .ai-notes {
+  margin-top: 5px;
+  font-size: 12px; color: #475569;
+  font-style: italic;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.absence-item .ai-side {
+  display: flex; align-items: center; gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Bouton poubelle */
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: background-color .15s, color .15s, border-color .15s;
+}
+.icon-btn:hover { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+.icon-btn.danger:hover { color: var(--danger, #b91c1c); }
+
+.school-absences .empty {
+  text-align: center;
+  padding: 20px;
+  color: #94a3b8;
+  font-size: 13px;
+  border: 1px dashed var(--border, #e5e7eb);
+  border-radius: 12px;
+  background: #fafafa;
+}

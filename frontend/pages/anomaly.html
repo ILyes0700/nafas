@@ -1,0 +1,52 @@
+<section class="page sci-page anomaly-page" id="page-anomaly">
+
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="17" r="0.6" fill="currentColor"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Détection d'anomalies — Analyse statistique Z-score (µ/σ)</h1>
+        <div class="ph-sub">Détecte les événements exceptionnels de pollution à Gabès (incendies d'usine, rejets chimiques, tempêtes de sable) invisibles aux modèles de prédiction classiques.</div>
+      </div>
+    </div>
+    <div class="ph-actions">
+      <span id="an-demo-badge" class="pill info" style="display:none">⚠ Modèle non entraîné</span>
+      <button class="btn" id="an-refresh">Rafraîchir</button>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="grid grid-4" id="an-stats">
+    <div class="card"><h3>Événements (30j)</h3><div class="value" id="an-total">—</div><div class="hint">anomalies détectées</div></div>
+    <div class="card"><h3>Actives (6h)</h3><div class="value" id="an-active">—</div><div class="hint">en cours</div></div>
+    <div class="card"><h3>Seuil</h3><div class="value" id="an-threshold">—</div><div class="hint">z ≥ 2σ sur AQI réel</div></div>
+    <div class="card"><h3>Méthode</h3><div class="value" style="font-size:15px" id="an-method">—</div><div class="hint">détection statistique</div></div>
+  </div>
+
+  <!-- TIMELINE -->
+  <div class="card" style="margin-top:18px">
+    <h3>Chronologie AQI avec marqueurs d'anomalies (7 jours)</h3>
+    <div class="chart-box chart-box-lg"><canvas id="an-timeline"></canvas></div>
+  </div>
+
+  <!-- RECON + TYPES -->
+  <div class="grid grid-2" style="margin-top:18px">
+    <div class="card"><h3>Score d'anomalie |z| : normal vs anomalie</h3><div class="chart-box"><canvas id="an-recon"></canvas></div></div>
+    <div class="card"><h3>Distribution des types d'anomalies</h3><div class="chart-box"><canvas id="an-types"></canvas></div></div>
+  </div>
+
+  <!-- EVENTS TABLE -->
+  <div class="card" style="margin-top:18px">
+    <h3>Derniers événements d'anomalie</h3>
+    <div class="table-wrap" style="margin-top:8px">
+      <table class="basic-table sci-table" id="an-events">
+        <thead><tr><th>Zone</th><th>Détecté le</th><th>AQI</th><th>Type</th><th>Score |z|</th><th>Écart</th><th>Rareté</th></tr></thead>
+        <tbody><tr><td colspan="7" class="muted">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</section>

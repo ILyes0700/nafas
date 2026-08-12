@@ -1,0 +1,86 @@
+<section class="page sci-page dl-page" id="page-deep-learning">
+
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="5" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="19" cy="18" r="2"/>
+          <path d="M7 6l3 5M7 18l3-5M14 12l3-5M14 12l3 5"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Deep Learning — CNN + BiLSTM + Multi-Head Attention</h1>
+        <div class="ph-sub">Architecture pro (état de l'art) : front-end CNN d'extraction de motifs + réseau BiLSTM bidirectionnel (24 pas × 7 features) + attention multi-têtes (4 têtes). Prévision multi-horizon +1h / +6h / +24h.</div>
+      </div>
+    </div>
+    <div class="ph-actions">
+      <span id="dl-demo-badge" class="pill info" style="display:none">⚠ Modèle non entraîné</span>
+      <button class="btn" id="dl-refresh">Rafraîchir</button>
+    </div>
+  </div>
+
+  <!-- ARCHITECTURE -->
+  <div class="card">
+    <h3>Architecture du modèle hybride</h3>
+    <div class="dl-arch">
+      <div class="dl-node">Input<br><small>24 × 7</small></div>
+      <span class="dl-arrow">→</span>
+      <div class="dl-node accent">Conv1D(32)<br><small>motifs locaux</small></div>
+      <span class="dl-arrow">→</span>
+      <div class="dl-node">BiLSTM(48)<br><small>return_seq</small></div>
+      <span class="dl-arrow">→</span>
+      <div class="dl-node accent">Multi-Head Attention<br><small>4 têtes</small></div>
+      <span class="dl-arrow">→</span>
+      <div class="dl-node">BiLSTM(24)</div>
+      <span class="dl-arrow">→</span>
+      <div class="dl-node">Dense(24)</div>
+      <span class="dl-arrow">→</span>
+      <div class="dl-node out">AQI + classe</div>
+    </div>
+  </div>
+
+  <!-- DL COMPARISON TABLE -->
+  <div class="card" style="margin-top:18px">
+    <h3>Comparaison des modèles Deep Learning</h3>
+    <div class="table-wrap" style="margin-top:8px">
+      <table class="basic-table sci-table" id="dl-table">
+        <thead><tr><th>Modèle</th><th>Architecture</th><th>Acc %</th><th>F1</th><th>MAE</th><th>RMSE</th><th>R²</th><th>AUC</th><th>Lat (ms)</th></tr></thead>
+        <tbody><tr><td colspan="9" class="muted">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- LSTM vs BiLSTM COMPARISON -->
+  <div class="card" style="margin-top:18px">
+    <h3>Comparaison LSTM vs BiLSTM</h3>
+    <div class="muted small">Même architecture — seule différence : le LSTM lit le temps dans un seul sens, le BiLSTM dans les deux sens. Chiffres <b>réels</b> issus de l'entraînement (horizon +1h). ✅ = gagnant.</div>
+    <div id="dl-vs" class="dl-vs-wrap"><div class="muted">Chargement…</div></div>
+  </div>
+
+  <!-- PREDICTIONS PER ZONE -->
+  <div class="card" style="margin-top:18px">
+    <h3>Prédictions par zone (CNN+BiLSTM+Attention)</h3>
+    <div id="dl-predictions" class="dl-pred-grid"><div class="muted">Chargement…</div></div>
+  </div>
+
+  <!-- HORIZONS EXPLANATION -->
+  <div class="card" style="margin-top:18px">
+    <h3>Pourquoi 3 horizons : +1h, +6h, +24h ?</h3>
+    <div class="muted">
+      <p><b>+1h (court terme)</b> — la meilleure précision : l'état actuel de l'air prédit presque directement l'heure suivante (RMSE le plus bas).</p>
+      <p><b>+6h (moyen terme)</b> — utile pour anticiper une dégradation dans la demi-journée ; l'erreur augmente car davantage de facteurs (vent, trafic, rejets industriels) peuvent changer.</p>
+      <p><b>+24h (long terme)</b> — le plus utile pour la population et les alertes (planifier la journée du lendemain), mais scientifiquement le plus difficile : l'incertitude météo s'accumule, donc l'erreur y est la plus élevée. C'est un comportement <i>normal et attendu</i> en prévision : plus l'horizon est lointain, plus l'erreur croît. Notre système atténue cet effet grâce aux variables cycliques (heure/jour), aux retards multiples et aux données augmentées par AE-CGAN.</p>
+    </div>
+  </div>
+
+  <!-- ACTUAL VS PRED + ATTENTION -->
+  <div class="grid grid-2" style="margin-top:18px">
+    <div class="card"><h3>Prédiction vs réel (jeu de test réel)</h3><div class="muted small">Ligne pleine = valeurs réelles mesurées · pointillés = prédiction du meilleur modèle, sur la zone la plus riche en données.</div><div class="chart-box"><canvas id="dl-series"></canvas></div></div>
+    <div class="card">
+      <h3>Carte d'attention BiLSTM — Gabès</h3>
+      <div class="muted small">Poids d'attention <b>réels</b> du BiLSTM (moyennés sur les fenêtres de test). Cellules sombres = heures les plus influentes pour la prédiction. Vide si l'entraînement TensorFlow n'a pas été lancé.</div>
+      <div id="dl-attention" class="attn-wrap"><div class="muted">Chargement…</div></div>
+    </div>
+  </div>
+
+</section>

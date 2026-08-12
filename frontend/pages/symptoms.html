@@ -1,0 +1,186 @@
+<section class="page">
+
+  <!-- HEADER UNIFIE -->
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M22 12h-4l-3 9-6-18-3 9H2"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Symptom Tracking</h1>
+        <div class="ph-sub">Report and track symptoms you experience in your area.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       VUE CITOYEN — formulaire | discussions santé + stats + feed
+       ========================================================= -->
+  <div id="symp-citizen-view" hidden>
+
+    <div class="grid grid-2">
+      <!-- Colonne gauche : déclaration -->
+      <div class="card">
+        <h3>Report a Symptom</h3>
+        <form id="form-symptom">
+          <div class="field"><label>Zone</label>
+            <select name="zone_id" id="symp-zone" required></select>
+          </div>
+          <div class="field"><label>Symptom</label>
+            <select name="symptom" required>
+              <option>Dry Cough</option>
+              <option>Headache</option>
+              <option>Breathing Difficulty</option>
+              <option>Eye Irritation</option>
+              <option>Sore Throat</option>
+              <option>Nausea</option>
+              <option>Fatigue</option>
+            </select>
+          </div>
+          <div class="field"><label>Severity</label>
+            <select name="severity">
+              <option value="mild">Mild</option>
+              <option value="moderate">Moderate</option>
+              <option value="severe">Severe</option>
+            </select>
+          </div>
+          <div class="field"><label>Notes</label>
+            <textarea name="notes" placeholder="Additional details…"></textarea>
+          </div>
+          <button class="btn primary" type="submit">Submit</button>
+          <div id="symp-status" class="muted" style="margin-top:10px"></div>
+        </form>
+      </div>
+
+      <!-- Colonne droite : Discussions (haut) > Statistiques > Derniers -->
+      <div style="display:flex;flex-direction:column;gap:18px">
+
+        <!-- Discussions with the health team (visual priority) -->
+        <div class="card">
+          <div class="row between">
+            <h3 style="margin:0">Discussions with the health team</h3>
+            <span class="muted" style="font-size:12px">
+              Visible as soon as a staff member contacts you
+            </span>
+          </div>
+          <hr style="margin:12px 0">
+          <div id="sc-my-list" class="sc-mythreads">
+            <div class="empty">No health discussions open with the team.</div>
+          </div>
+
+          <!-- Panneau de chat citoyen (caché tant que rien n'est sélectionné) -->
+          <div id="sc-citizen-chat" class="sc-chat-card sc-chat-inline"
+               style="margin-top:14px;display:none">
+            <div class="sc-head">
+              <div class="left">
+                <div class="avatar" id="sc-c-avatar">N</div>
+                <div class="info">
+                  <div class="title" id="sc-c-title">—</div>
+                  <div class="sub"  id="sc-c-sub">—</div>
+                </div>
+              </div>
+            </div>
+            <div id="sc-c-log" class="sc-log"></div>
+            <form id="sc-c-form" class="sc-input">
+              <textarea id="sc-c-input" placeholder="Type your message…" rows="1" required></textarea>
+              <button class="btn primary" type="submit">
+                Send
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </form>
+            <div class="sc-input-hint">Enter to send · Shift+Enter for new line</div>
+          </div>
+        </div>
+
+        <!-- Statistics + latest symptoms -->
+        <div class="card">
+          <h3>Statistics (7 days)</h3>
+          <div id="symp-stats" class="grid grid-3" style="margin-top:8px"></div>
+          <hr>
+          <h3>Latest symptoms</h3>
+          <div id="symp-feed"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       VUE SANTÉ / ADMIN — liste citoyens + chat
+       ========================================================= -->
+  <div id="symp-staff-view" hidden>
+
+    <div class="sc-layout">
+
+      <!-- Left column: thread list -->
+      <div class="card sc-list-card">
+        <div class="sc-head">
+          <h3>Citizens to follow</h3>
+          <div class="meta" id="sc-list-meta">— symptoms</div>
+        </div>
+        <div class="sc-filters" id="sc-filters">
+          <div class="sc-filter active" data-status="all">All <span class="count" id="sc-f-all">0</span></div>
+          <div class="sc-filter" data-status="new">New <span class="count" id="sc-f-new">0</span></div>
+          <div class="sc-filter" data-status="in_progress">In progress <span class="count" id="sc-f-in_progress">0</span></div>
+          <div class="sc-filter" data-status="resolved">Resolved <span class="count" id="sc-f-resolved">0</span></div>
+        </div>
+        <div class="sc-threads" id="sc-threads">
+          <div class="empty">Loading…</div>
+        </div>
+      </div>
+
+      <!-- Colonne droite : chat -->
+      <div class="card sc-chat-card" id="sc-chat-card">
+        <!-- État vide -->
+        <div class="sc-empty" id="sc-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+          </svg>
+          <div class="t">Select a citizen</div>
+          <div class="s">
+            Pick a report in the list to open the conversation.
+            The discussion becomes visible to the citizen as soon as you send your first message.
+          </div>
+        </div>
+
+        <!-- Vue chat -->
+        <div id="sc-chat" hidden style="flex:1;display:flex;flex-direction:column;min-height:0">
+          <div class="sc-head">
+            <div class="left">
+              <div class="avatar" id="sc-avatar">?</div>
+              <div class="info">
+                <div class="title" id="sc-title">—</div>
+                <div class="sub"   id="sc-sub">—</div>
+              </div>
+            </div>
+            <div class="right">
+              <select class="sc-status-select" id="sc-status">
+                <option value="new">New</option>
+                <option value="in_progress">In progress</option>
+                <option value="resolved">Resolved</option>
+              </select>
+            </div>
+          </div>
+          <div id="sc-log" class="sc-log"></div>
+          <form id="sc-form" class="sc-input">
+            <textarea id="sc-input" placeholder="Message to send to the citizen…" rows="1" required></textarea>
+            <button class="btn primary" type="submit">
+              Send
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </form>
+          <div class="sc-input-hint">Enter to send · Shift+Enter for new line</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Global statistics (collapsible footer) -->
+    <div class="card" style="margin-top:18px">
+      <h3>Statistics (7 days)</h3>
+      <div id="symp-staff-stats" class="grid grid-3" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+</section>

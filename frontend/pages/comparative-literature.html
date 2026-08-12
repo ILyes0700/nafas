@@ -1,0 +1,27 @@
+<section class="page sci-page lit-page" id="page-comparative-literature">
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      </div>
+      <div>
+        <h1>Comparaison avec la Littérature</h1>
+        <div class="ph-sub">Positionnement du système face aux travaux publiés — obligatoire pour la publication (Springer).</div>
+      </div>
+    </div>
+    <div class="ph-actions"><span id="lit-demo-badge" class="pill info" style="display:none">⚠ Modèle non entraîné</span><button class="btn" id="lit-refresh">Rafraîchir</button></div>
+  </div>
+
+  <div class="card">
+    <h3>Tableau comparatif</h3>
+    <div class="table-wrap" style="margin-top:8px"><table class="basic-table sci-table" id="lit-table">
+      <thead><tr><th>Étude</th><th>Année</th><th>RMSE</th><th>F1</th><th>Lieu</th><th>Méthode</th></tr></thead>
+      <tbody><tr><td colspan="6" class="muted">Chargement…</td></tr></tbody>
+    </table></div>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:18px">
+    <div class="card"><h3>RMSE — notre système vs littérature</h3><div class="chart-box chart-box-lg"><canvas id="lit-chart"></canvas></div></div>
+    <div class="card sci-best" id="lit-adv"><div class="muted">Chargement…</div></div>
+  </div>
+</section>

@@ -1,0 +1,74 @@
+<section class="users-page">
+
+  <!-- HERO -->
+  <div class="admin-hero">
+    <div class="ah-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+      </svg>
+    </div>
+    <div>
+      <h1 class="ah-title">User Management</h1>
+      <p class="ah-sub" id="um-sub">Manage accounts, roles and access.</p>
+    </div>
+    <div class="ah-actions">
+      <button class="btn primary" id="um-create-admin" style="display:none">
+        <svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+        Create Admin
+      </button>
+      <button class="btn outline" id="um-refresh">
+        <svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="admin-kpis" id="um-kpis"></div>
+
+  <!-- FILTERS + TABLE -->
+  <div class="card">
+    <div class="um-toolbar">
+      <input type="search" id="um-search" class="um-input" placeholder="Search name, email or phone…">
+      <select id="um-filter-role" class="um-input">
+        <option value="">All roles</option>
+        <option value="citizen">Normal User</option>
+        <option value="health">Doctor</option>
+        <option value="school">School</option>
+        <option value="admin">Admin</option>
+        <option value="super_admin">Super Admin</option>
+      </select>
+      <select id="um-filter-status" class="um-input">
+        <option value="">All status</option>
+        <option value="pending">Pending</option>
+        <option value="active">Active</option>
+        <option value="suspended">Suspended</option>
+      </select>
+    </div>
+
+    <div class="um-table-wrap">
+      <table class="um-table">
+        <thead>
+          <tr>
+            <th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Status</th><th>Verified</th><th class="um-actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="um-tbody">
+          <tr><td colspan="7" class="empty">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MODAL (create admin) -->
+  <div class="um-modal" id="um-modal" hidden>
+    <div class="um-modal-card">
+      <div class="um-modal-head">
+        <h3 id="um-modal-title">Create Admin</h3>
+        <button class="um-modal-x" id="um-modal-close">&times;</button>
+      </div>
+      <div class="um-modal-body" id="um-modal-body"></div>
+    </div>
+  </div>
+
+</section>

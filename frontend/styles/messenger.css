@@ -1,0 +1,111 @@
+/* =========================================================
+   Nafass Messenger — floating chat widget
+   ========================================================= */
+#msgr-root { --m-accent:#0d3b66; --m-bg:#ffffff; --m-soft:#f1f5f9; --m-text:#0f172a; --m-sub:#64748b; --m-border:#e2e8f0; --m-me:#0d3b66; --m-them:#eef2f7; }
+
+.msgr-launch {
+  position:fixed; right:22px; bottom:22px; z-index:1400;
+  width:56px; height:56px; border-radius:50%; border:none; cursor:pointer;
+  background:linear-gradient(135deg,#0d3b66,#1d4e89); color:#fff;
+  box-shadow:0 10px 26px rgba(13,59,102,.42); display:flex; align-items:center; justify-content:center;
+  transition:transform .16s ease, box-shadow .16s ease;
+}
+.msgr-launch svg { width:26px; height:26px; }
+.msgr-launch:hover { transform:translateY(-2px) scale(1.04); box-shadow:0 14px 32px rgba(13,59,102,.5); }
+.msgr-launch.active { transform:scale(.96); }
+.msgr-badge {
+  position:absolute; top:-3px; right:-3px; min-width:20px; height:20px; padding:0 5px;
+  background:#ef4444; color:#fff; border-radius:999px; font-size:11px; font-weight:800;
+  display:flex; align-items:center; justify-content:center; border:2px solid #fff;
+}
+.msgr-badge.hidden { display:none; }
+
+.msgr-panel {
+  position:fixed; right:22px; bottom:90px; z-index:1401;
+  width:360px; max-width:calc(100vw - 32px); height:540px; max-height:calc(100vh - 130px);
+  background:var(--m-bg); border:1px solid var(--m-border); border-radius:18px;
+  box-shadow:0 24px 60px rgba(15,23,42,.28); display:flex; flex-direction:column; overflow:hidden;
+  opacity:0; transform:translateY(14px) scale(.98); pointer-events:none; transition:.18s ease;
+}
+.msgr-panel.open { opacity:1; transform:translateY(0) scale(1); pointer-events:auto; }
+
+.msgr-head {
+  flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:12px 14px;
+  background:linear-gradient(135deg,#0d3b66,#1d4e89); color:#fff;
+}
+.msgr-title { flex:1 1 auto; font-weight:800; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.msgr-icon { border:none; background:rgba(255,255,255,.16); color:#fff; width:30px; height:30px; border-radius:9px; cursor:pointer; font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center; transition:.15s; }
+.msgr-icon:hover { background:rgba(255,255,255,.3); }
+.msgr-icon.hidden { display:none; }
+
+.msgr-list { flex:1 1 auto; overflow-y:auto; padding:6px; }
+.msgr-empty { color:var(--m-sub); font-size:13.5px; text-align:center; padding:26px 16px; }
+.msgr-hint { color:var(--m-sub); font-size:12px; }
+.msgr-row { display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:12px; cursor:pointer; transition:background .14s; }
+.msgr-row:hover { background:var(--m-soft); }
+.msgr-row.unread { background:rgba(13,59,102,.06); }
+.msgr-av { flex:0 0 auto; width:44px; height:44px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg,#1d4e89,#0d3b66); color:#fff; font-weight:800; font-size:16px; }
+.msgr-av img { width:100%; height:100%; object-fit:cover; }
+.msgr-row-main { flex:1 1 auto; min-width:0; }
+.msgr-row-top { display:flex; justify-content:space-between; gap:8px; }
+.msgr-row-name { font-weight:700; font-size:14px; color:var(--m-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.msgr-row-time { font-size:11px; color:var(--m-sub); flex:0 0 auto; }
+.msgr-row-last { font-size:12.5px; color:var(--m-sub); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.msgr-row.unread .msgr-row-last { color:var(--m-text); font-weight:600; }
+.msgr-row-dot { flex:0 0 auto; min-width:18px; height:18px; padding:0 5px; background:var(--m-accent); color:#fff; border-radius:999px; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+
+.msgr-chat { flex:1 1 auto; display:flex; flex-direction:column; min-height:0; }
+.msgr-chat.hidden, .msgr-list.hidden { display:none; }
+.msgr-thread { flex:1 1 auto; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:4px; background:linear-gradient(180deg,#f8fafc,#eef2f7); }
+.msgr-b { display:flex; flex-direction:column; max-width:78%; margin-bottom:4px; }
+.msgr-b.me { align-self:flex-end; align-items:flex-end; }
+.msgr-b.them { align-self:flex-start; align-items:flex-start; }
+.msgr-bubble { padding:8px 12px; border-radius:16px; font-size:13.5px; line-height:1.4; word-wrap:break-word; white-space:pre-wrap; }
+.msgr-b.me .msgr-bubble { background:var(--m-me); color:#fff; border-bottom-right-radius:5px; }
+.msgr-b.them .msgr-bubble { background:#fff; color:var(--m-text); border:1px solid var(--m-border); border-bottom-left-radius:5px; }
+.msgr-b-time { font-size:10px; color:var(--m-sub); margin:1px 4px 0; }
+
+.msgr-form { flex:0 0 auto; display:flex; gap:8px; padding:10px; border-top:1px solid var(--m-border); background:var(--m-bg); }
+.msgr-form.disabled { opacity:.7; }
+.msgr-input { flex:1 1 auto; border:1px solid var(--m-border); background:var(--m-soft); border-radius:999px; padding:10px 14px; font-size:13.5px; outline:none; transition:.15s; }
+.msgr-input:focus { border-color:var(--m-accent); background:#fff; box-shadow:0 0 0 3px rgba(13,59,102,.12); }
+.msgr-send { flex:0 0 auto; width:40px; height:40px; border:none; border-radius:50%; background:var(--m-accent); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:.15s; }
+.msgr-send svg { width:19px; height:19px; }
+.msgr-send:hover { filter:brightness(1.08); }
+
+/* Dark mode */
+body.dark #msgr-root, .dark #msgr-root, [data-theme="dark"] #msgr-root {
+  --m-bg:#1e293b; --m-soft:#0f172a; --m-text:#e2e8f0; --m-sub:#94a3b8; --m-border:#334155; --m-them:#334155;
+}
+body.dark .msgr-b.them .msgr-bubble, [data-theme="dark"] .msgr-b.them .msgr-bubble { background:#334155; color:#e2e8f0; border-color:#475569; }
+body.dark .msgr-thread, [data-theme="dark"] .msgr-thread { background:linear-gradient(180deg,#0f172a,#1e293b); }
+
+/* Mobile */
+@media (max-width:520px){
+  .msgr-panel { left:8px; right:8px; bottom:84px; width:auto; height:min(72vh,540px); }
+  .msgr-launch { right:16px; bottom:16px; }
+}
+
+/* ===== Premium polish (R176) — same design language, richer finish ===== */
+.msgr-launch{background:linear-gradient(135deg,#0d3b66,#1d4e89,#1d4e89);box-shadow:0 12px 30px rgba(13,59,102,.45)}
+.msgr-launch::after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 0 rgba(13,59,102,.45);animation:msgrPulse 2.4s ease-out infinite}
+@keyframes msgrPulse{0%{box-shadow:0 0 0 0 rgba(13,59,102,.4)}70%{box-shadow:0 0 0 14px rgba(13,59,102,0)}100%{box-shadow:0 0 0 0 rgba(13,59,102,0)}}
+.msgr-panel{border-radius:20px;box-shadow:0 30px 70px rgba(15,23,42,.32);backdrop-filter:saturate(1.05)}
+.msgr-head{gap:10px;padding:13px 15px;box-shadow:0 2px 10px rgba(13,59,102,.25)}
+.msgr-title{font-size:15.5px;letter-spacing:.2px}
+.msgr-icon{border-radius:10px;transition:transform .15s,background .15s}
+.msgr-icon:hover{transform:scale(1.08)}
+.msgr-row{border-radius:14px}
+.msgr-row:hover{background:linear-gradient(90deg,#f1f5ff,#f8fafc)}
+.msgr-av{box-shadow:0 3px 8px rgba(13,59,102,.25)}
+.msgr-av::after{content:"";position:absolute;right:0;bottom:0;width:11px;height:11px;border-radius:50%;background:#22c55e;border:2px solid #fff;transform:translate(1px,1px)}
+.msgr-row{position:relative}
+.msgr-b.me .msgr-bubble{background:linear-gradient(135deg,#0d3b66,#1d4e89);box-shadow:0 3px 10px rgba(13,59,102,.28)}
+.msgr-b.them .msgr-bubble{box-shadow:0 2px 6px rgba(15,23,42,.06)}
+.msgr-bubble{font-size:14px;padding:9px 13px;transition:transform .12s}
+.msgr-b:hover .msgr-bubble{transform:translateY(-1px)}
+.msgr-thread{background:linear-gradient(180deg,#f8fafc,#eef2ff)}
+.msgr-form input,.msgr-form textarea{border-radius:999px!important}
+.msgr-form button{border-radius:50%!important;transition:transform .14s}
+.msgr-form button:hover{transform:scale(1.08)}

@@ -1,0 +1,44 @@
+<section class="page weekly-page" id="page-weekly">
+
+  <!-- HEADER UNIFIE -->
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+          <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Weekly AI Report · الملخص الأسبوعي</h1>
+        <div class="ph-sub">Executive summary for the Regional Health Authority. Generated automatically every Monday.</div>
+      </div>
+    </div>
+    <div class="ph-actions">
+      <label class="ph-control">
+        <span class="muted small">Week</span>
+        <input type="date" id="weekly-week-start" />
+      </label>
+      <button class="btn ghost" id="weekly-load" type="button">Load</button>
+      <button class="btn primary" id="weekly-regen" type="button" hidden>Regenerate</button>
+    </div>
+  </div>
+
+  <div class="card weekly-metrics-card">
+    <h3>Weekly indicators</h3>
+    <div id="weekly-metrics" class="weekly-metrics">
+      <p class="muted">Loading…</p>
+    </div>
+  </div>
+
+  <div class="card weekly-summary-card">
+    <h3>AI Summary <span id="weekly-model-tag" class="badge"></span></h3>
+    <div id="weekly-summary" class="weekly-summary">
+      <p class="muted">Loading…</p>
+    </div>
+    <p class="muted small" id="weekly-generated-at"></p>
+  </div>
+</section>

@@ -1,0 +1,53 @@
+/* Forecast page — ML/DL hybrid prediction admin panel */
+.forecast-page .grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+.forecast-page .forecast-card {
+  background: #fff;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.forecast-page .forecast-card h4 {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+}
+.forecast-page .forecast-horizons {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+.forecast-page .fh {
+  padding: 8px;
+  border-radius: 8px;
+  text-align: center;
+  background: #f8fafc;
+}
+.forecast-page .fh-safe { background: #ecfdf5; color: #064e3b; }
+.forecast-page .fh-warning { background: #fffbeb; color: #78350f; }
+.forecast-page .fh-critical { background: #fee2e2; color: #7f1d1d; }
+.forecast-page .fh-h { font-size: 0.75rem; opacity: 0.7; }
+.forecast-page .fh-v { font-size: 1.5rem; font-weight: 700; }
+.forecast-page .fh-l { text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.04em; }
+.forecast-page .basic-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.forecast-page .basic-table th,
+.forecast-page .basic-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  text-align: left;
+}
+.forecast-page .basic-table thead th {
+  background: #f9fafb;
+  font-weight: 600;
+}
+.forecast-page .table-wrap {
+  overflow-x: auto;
+}

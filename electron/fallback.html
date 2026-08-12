@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Nafass — Connexion impossible</title>
+  <style>
+    body{font-family:'Segoe UI',system-ui;background:#f8f7f2;color:#1f2937;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+    .box{background:#fff;border:1px solid #e6e3da;border-radius:14px;padding:40px;max-width:560px;box-shadow:0 8px 30px rgba(15,23,42,.08)}
+    h1{color:#0d3b66;margin:0 0 6px}
+    code{background:#f1efe8;padding:2px 6px;border-radius:6px}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#fef3c7;color:#92400e;font-weight:600;font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="box">
+    <span class="pill">⚠ Backend non disponible</span>
+    <h1 style="margin-top:10px">Nafass — Impossible de joindre WAMP</h1>
+    <p>L’application n’a pas pu charger <code>http://localhost/gabes-tatenafas/frontend/index.php</code>.</p>
+    <ol>
+      <li>Lance <strong>WAMP</strong> (icône verte dans la barre des tâches).</li>
+      <li>Vérifie que le dossier <code>gabes-tatenafas</code> est dans <code>C:\wamp64\www\</code> (ou <code>/var/www/html/</code> sur Linux/macOS).</li>
+      <li>Importe la base : <code>db/schema.sql</code> dans phpMyAdmin.</li>
+      <li>Recharge cette fenêtre (<kbd>Ctrl</kbd>+<kbd>R</kbd>).</li>
+    </ol>
+  </div>
+</body>
+</html>

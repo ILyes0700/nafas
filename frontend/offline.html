@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Offline · Nafass</title>
+<style>
+  :root {
+    --primary:   #0d3b66;
+    --primary-2: #1d4e89;
+    --bg:        #f8f7f2;
+    --ink:       #1f2937;
+    --muted:     #6b7280;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  body {
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .card {
+    width: 100%; max-width: 460px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 32px 28px 28px;
+    box-shadow: 0 12px 30px rgba(15,23,42,.08);
+    text-align: center;
+  }
+  .icon {
+    width: 84px; height: 84px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+  }
+  h1 {
+    margin: 0 0 8px; font-size: 22px; color: var(--primary);
+  }
+  p {
+    margin: 0 0 20px; color: var(--muted); font-size: 14px; line-height: 1.55;
+  }
+  .actions { display: flex; gap: 8px; justify-content: center; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer; border: 0;
+    transition: filter .12s, transform .12s;
+  }
+  .btn.primary { background: var(--primary); color: #fff; }
+  .btn.ghost   { background: #f1efe8; color: var(--ink); }
+  .btn:hover   { filter: brightness(1.05); }
+  .btn:active  { transform: translateY(1px); }
+  .hint {
+    margin-top: 18px; font-size: 12px; color: var(--muted);
+  }
+  .hint b { color: var(--primary); }
+  .status {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 999px;
+    background: #fee2e2; color: #991b1b;
+    font-size: 12px; font-weight: 600;
+    margin-bottom: 14px;
+  }
+  .status .dot { width: 8px; height: 8px; border-radius: 50%; background: #dc2626; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <span class="status"><span class="dot"></span> Offline</span>
+    <div class="icon">
+      <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12.55a11 11 0 0114 0"/>
+        <path d="M2 8.36a16 16 0 0120 0"/>
+        <path d="M8.5 16.4a6 6 0 017 0"/>
+        <line x1="12" y1="20" x2="12.01" y2="20"/>
+        <line x1="2" y1="2" x2="22" y2="22"/>
+      </svg>
+    </div>
+    <h1>You're offline</h1>
+    <p>Nafass cached the last data it could see. Reconnect to sync new alerts, reports and consultations.</p>
+    <div class="actions">
+      <button class="btn primary" onclick="window.location.reload()">Try again</button>
+      <button class="btn ghost"   onclick="window.location.href='./index.php'">Open app shell</button>
+    </div>
+    <p class="hint">Cached pages still open from the sidebar — only live data needs the network.</p>
+  </div>
+  <script>
+    // Auto-reload when the device reconnects.
+    window.addEventListener('online', () => window.location.reload());
+  </script>
+</body>
+</html>

@@ -1,0 +1,202 @@
+<section class="page diary-page" id="page-diary">
+
+  <!-- HEADER UNIFIE -->
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+          <path d="M8 14h2M14 14h2M8 18h2M14 18h2"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Health Diary · يوميات صحتي</h1>
+        <div class="ph-sub">Log how you feel every day to spot trends and anticipate pollution peaks.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Past consultation summaries (visible to the citizen only). Pinned at
+       the top so the doctor's notes are seen immediately after a consultation. -->
+  <div class="card consult-history-card" id="consult-history-card" hidden>
+    <div class="diary-form-head">
+      <h3>My Consultations · استشاراتي</h3>
+      <span class="muted small" id="consult-history-count"></span>
+    </div>
+    <div id="consult-history-list" class="consult-history"></div>
+  </div>
+
+  <!-- FORMULAIRE + GRAPH -->
+  <div class="diary-grid">
+    <div class="card diary-form-card">
+      <div class="diary-form-head">
+        <h3>Today</h3>
+        <span class="diary-date-badge" id="diary-date-label">—</span>
+      </div>
+
+      <form id="diary-form" class="diary-form">
+
+        <div class="diary-range" data-key="mood">
+          <div class="dr-head">
+            <span class="dr-label">Overall mood</span>
+            <span class="dr-value" data-out="mood">3</span>
+          </div>
+          <input type="range" min="1" max="5" value="3" name="mood" />
+          <div class="dr-scale">
+            <span><svg class="ico-mood" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></span>
+            <span><svg class="ico-mood" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="8" y1="15" x2="16" y2="15"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></span>
+            <span><svg class="ico-mood" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></span>
+          </div>
+        </div>
+
+        <div class="diary-range" data-key="cough">
+          <div class="dr-head">
+            <span class="dr-label">Cough</span>
+            <span class="dr-value" data-out="cough">0</span>
+          </div>
+          <input type="range" min="0" max="5" value="0" name="cough" />
+          <div class="dr-scale"><span>none</span><span>moderate</span><span>severe</span></div>
+        </div>
+
+        <div class="diary-range" data-key="breath_diff">
+          <div class="dr-head">
+            <span class="dr-label">Breathing difficulty</span>
+            <span class="dr-value" data-out="breath_diff">0</span>
+          </div>
+          <input type="range" min="0" max="5" value="0" name="breath_diff" />
+          <div class="dr-scale"><span>none</span><span>moderate</span><span>severe</span></div>
+        </div>
+
+        <div class="diary-range" data-key="eye_irritation">
+          <div class="dr-head">
+            <span class="dr-label">Eye irritation</span>
+            <span class="dr-value" data-out="eye_irritation">0</span>
+          </div>
+          <input type="range" min="0" max="5" value="0" name="eye_irritation" />
+          <div class="dr-scale"><span>no</span><span>mild</span><span>strong</span></div>
+        </div>
+
+        <div class="diary-range" data-key="headache">
+          <div class="dr-head">
+            <span class="dr-label">Headache</span>
+            <span class="dr-value" data-out="headache">0</span>
+          </div>
+          <input type="range" min="0" max="5" value="0" name="headache" />
+          <div class="dr-scale"><span>no</span><span>mild</span><span>migraine</span></div>
+        </div>
+
+        <div class="diary-range" data-key="fatigue">
+          <div class="dr-head">
+            <span class="dr-label">Fatigue</span>
+            <span class="dr-value" data-out="fatigue">0</span>
+          </div>
+          <input type="range" min="0" max="5" value="0" name="fatigue" />
+          <div class="dr-scale"><span>energetic</span><span>average</span><span>exhausted</span></div>
+        </div>
+
+        <label class="diary-notes">
+          <span class="dn-label">Notes (optional)</span>
+          <textarea name="notes" rows="2" maxlength="500" placeholder="E.g. woke up with eye irritation, neighbor burned waste…"></textarea>
+        </label>
+
+        <div class="diary-submit-row">
+          <button class="btn primary diary-submit-btn" type="submit">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 13l4 4L19 7"/>
+            </svg>
+            <span>Save today</span>
+          </button>
+          <span id="diary-form-msg" class="muted small"></span>
+        </div>
+      </form>
+    </div>
+
+    <div class="card diary-chart-card">
+      <h3>Trend · last 30 days</h3>
+      <div class="chart-wrap chart-wrap-md">
+        <canvas id="diary-chart"></canvas>
+      </div>
+      <p class="muted small" id="diary-stats">No data yet — log your first day.</p>
+    </div>
+  </div>
+
+  <!-- AI Insights — analyses chart + history and gives personalized recommendations -->
+  <div class="card diary-ai-card" id="diary-ai-card">
+    <div class="dai-head">
+      <div class="dai-title">
+        <div class="dai-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18h6"/><path d="M10 22h4"/>
+            <path d="M12 2a7 7 0 00-4 12.7c.6.5 1 1.2 1 2v.3h6V17c0-.8.4-1.5 1-2A7 7 0 0012 2z"/>
+            <path d="M12 6v3"/><path d="M12 11v.01"/>
+          </svg>
+        </div>
+        <div>
+          <h3>AI Insights · توصيات الذكاء الاصطناعي</h3>
+          <p class="dai-sub">Personalised analysis of your last 30 days. Generated by Nafass AI.</p>
+        </div>
+      </div>
+      <div class="dai-actions">
+        <span class="dai-meta" id="dai-meta"></span>
+        <button class="btn primary" id="dai-run">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12a9 9 0 11-3.5-7.1"/><path d="M21 4v5h-5"/>
+          </svg>
+          <span>Generate insights</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="dai-empty" class="dai-empty">
+      <p class="muted">Click <b>Generate insights</b> to let the AI analyse your diary.</p>
+    </div>
+
+    <div id="dai-loading" class="dai-loading" hidden>
+      <div class="dai-spinner" aria-hidden="true"></div>
+      <p class="muted small">Analysing your trends — this takes a few seconds…</p>
+    </div>
+
+    <div id="dai-result" class="dai-result" hidden>
+      <header class="dai-result-head">
+        <span class="dai-risk" id="dai-risk">low</span>
+        <p class="dai-summary" id="dai-summary"></p>
+      </header>
+      <div class="dai-grid">
+        <section class="dai-block dai-block-trends">
+          <h4><span class="dai-block-ico"><svg class="ico-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span> Trends</h4>
+          <ul id="dai-trends"></ul>
+        </section>
+        <section class="dai-block dai-block-warnings">
+          <h4><span class="dai-block-ico"><svg class="ico-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span> Warnings</h4>
+          <ul id="dai-warnings"></ul>
+        </section>
+        <section class="dai-block dai-block-actions">
+          <h4><span class="dai-block-ico"><svg class="ico-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span> Suggested actions</h4>
+          <ul id="dai-actions"></ul>
+        </section>
+      </div>
+      <footer class="dai-foot">
+        <span class="dai-source" id="dai-source"></span>
+        <span class="muted small">Informational only — does not replace a medical evaluation.</span>
+      </footer>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>History</h3>
+    <div class="table-wrap">
+      <table class="data-table" id="diary-table">
+        <thead>
+          <tr>
+            <th>Date</th><th>Mood</th><th>Cough</th><th>Resp.</th>
+            <th>Eyes</th><th>Head</th><th>Fatigue</th><th>Notes</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</section>

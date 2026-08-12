@@ -1,0 +1,44 @@
+<section class="alerts-page">
+
+  <!-- HEADER COMPACT -->
+  <div class="alerts-head">
+    <div class="ah-title-block">
+      <div class="ah-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/>
+          <path d="M10.3 21a1.94 1.94 0 003.4 0"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Alerts Center</h1>
+        <div class="ah-sub" id="alerts-updated">Loading…</div>
+      </div>
+    </div>
+    <div class="ah-pills" id="alerts-pills"></div>
+  </div>
+
+  <!-- BARRE OUTILS (recherche + filtres) -->
+  <div class="alerts-toolbar">
+    <div class="at-left">
+      <label class="at-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="alerts-search" placeholder="Search alerts…">
+      </label>
+    </div>
+    <div class="at-chips">
+      <button class="at-chip active" data-filter="all">All</button>
+      <button class="at-chip" data-filter="critical">Critical</button>
+      <button class="at-chip" data-filter="danger">Danger</button>
+      <button class="at-chip" data-filter="warning">Warning</button>
+      <button class="at-chip" data-filter="info">Info</button>
+    </div>
+    <span class="at-info">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 5.64 5.64L23 10"/></svg>
+      Auto-refresh 20 s
+    </span>
+  </div>
+
+  <!-- INBOX (liste compacte) -->
+  <div id="alerts-list" class="alerts-inbox"></div>
+
+</section>

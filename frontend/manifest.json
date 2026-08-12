@@ -1,0 +1,44 @@
+{
+  "name": "Nafass — نَفَس",
+  "short_name": "Nafass",
+  "description": "Health & air-quality monitoring for Gabès, Tunisia.",
+  "start_url": "./index.php",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0d3b66",
+  "theme_color": "#0d3b66",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["health", "utilities", "lifestyle", "education"],
+  "icons": [
+    { "src": "assets/logo-48.png",  "sizes": "48x48",   "type": "image/png" },
+    { "src": "assets/logo-96.png",  "sizes": "96x96",   "type": "image/png" },
+    { "src": "assets/logo-128.png", "sizes": "128x128", "type": "image/png" },
+    { "src": "assets/logo-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/logo-256.png", "sizes": "256x256", "type": "image/png" },
+    { "src": "assets/logo-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/logo-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/logo-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "url": "./index.php#/dashboard",
+      "icons": [{ "src": "assets/logo-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Alertes",
+      "short_name": "Alertes",
+      "url": "./index.php#/alerts",
+      "icons": [{ "src": "assets/logo-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Chatbot نفاس",
+      "short_name": "Chatbot",
+      "url": "./index.php#/chatbot",
+      "icons": [{ "src": "assets/logo-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}

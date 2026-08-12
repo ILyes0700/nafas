@@ -1,0 +1,83 @@
+/* UPGRADE v8 — Part 53 : Dashboard IA unifié.
+   Design aligné sur le reste de l'application (cartes blanches, accent bleu,
+   cohérent avec la sidebar et les autres pages) — plus de palette « salle de
+   contrôle » distincte. */
+.aid {
+  --aid-ink: #1f2937;      /* texte principal (slate-800) */
+  --aid-muted: #6b7280;    /* texte secondaire (slate-500) */
+  --aid-line: #e5e7eb;     /* bordures (slate-200) */
+  --aid-bg: #f8fafc;       /* fond doux (slate-50) */
+  --aid-accent: #0d3b66;   /* bleu marque (comme la sidebar) */
+  --aid-accent-soft: #eff4fb;
+  --aid-pass: #16a34a;     /* vert */
+  --aid-warn: #d97706;     /* ambre */
+  --aid-alert: #dc2626;    /* rouge */
+  color: var(--aid-ink);
+  padding: 4px 0;
+  font-family: inherit;
+}
+.aid * { box-sizing: border-box; }
+.aid-mono, .aid .metric-val {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Bande de mesure (résumé haut de page) — carte blanche, comme les autres pages */
+.aid-strip {
+  display: flex; gap: 12px; overflow-x: auto;
+  background: #fff; border: 1px solid var(--aid-line); border-radius: 12px;
+  padding: 14px 16px; margin-bottom: 18px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .05);
+}
+.aid-strip .chip {
+  min-width: 140px; flex: 0 0 auto; color: var(--aid-ink);
+  border-left: 3px solid var(--aid-accent); padding: 2px 12px;
+}
+.aid-strip .chip.warn { border-left-color: var(--aid-warn); }
+.aid-strip .chip.alert { border-left-color: var(--aid-alert); }
+.aid-strip .chip .k { font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--aid-muted); }
+.aid-strip .chip .v { font-size: 20px; font-weight: 700; color: var(--aid-ink); }
+.aid-strip .chip svg { display: block; margin-top: 3px; }
+
+/* Grille de cartes — même look que les autres pages */
+.aid-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px;
+}
+.aid-card {
+  background: #fff; border: 1px solid var(--aid-line); border-radius: 12px; overflow: hidden;
+  display: flex; flex-direction: column;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .05);
+}
+.aid-card > header {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--aid-bg); color: var(--aid-ink);
+  padding: 10px 14px; border-bottom: 1px solid var(--aid-line);
+}
+.aid-card > header .lbl { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; color: var(--aid-accent); }
+.aid-badge {
+  font-size: 10px; font-weight: 700;
+  padding: 2px 9px; border-radius: 999px;
+}
+.aid-badge.pass { background: #dcfce7; color: #166534; }
+.aid-badge.demo { background: #fef3c7; color: #92400e; }
+.aid-badge.ref { background: #dbeafe; color: #1e40af; }
+.aid-card .body { padding: 14px; font-size: 13px; color: var(--aid-ink); }
+.aid-card table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.aid-card th, .aid-card td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--aid-line); }
+.aid-card th { color: var(--aid-muted); text-transform: uppercase; font-size: 10px; letter-spacing: .04em; }
+.aid-empty {
+  text-align: center; padding: 20px 12px; color: var(--aid-muted);
+}
+.aid-empty .demo-tag { color: var(--aid-warn); font-weight: 700; }
+.aid-empty button {
+  margin-top: 12px; background: var(--aid-accent); color: #fff; border: 0;
+  padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px;
+  transition: background .15s ease;
+}
+.aid-empty button:hover { background: #0a2e50; }
+.aid-metric-row { display: flex; gap: 20px; flex-wrap: wrap; }
+.aid-metric .k { font-size: 10px; text-transform: uppercase; color: var(--aid-muted); letter-spacing: .06em; }
+.aid-metric .metric-val { font-size: 22px; font-weight: 700; color: var(--aid-accent); }
+
+/* Horodatage "mis a jour" dans l en-tete partage */
+#aid-updated { font-size: 11px; color: var(--aid-muted); }
+.aid { padding: 0; }

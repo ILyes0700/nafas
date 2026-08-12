@@ -1,0 +1,60 @@
+<section class="page forecast-page" id="page-forecast">
+
+  <!-- HEADER UNIFIE -->
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 12l4-7 5 9 4-5 5 9"/>
+          <path d="M3 19h18"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Hybrid pollution forecast (ML + DL)</h1>
+        <div class="ph-sub">Ensemble of AR(7) regression and a multi-EWMA sigmoid network. Evaluated by MAE / RMSE / MAPE / R² / SMAPE.</div>
+      </div>
+    </div>
+    <div class="ph-actions">
+      <button class="ph-btn ph-btn-primary" id="fc-train">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M9 12l2 2 4-4"/></svg>
+        Retrain on all zones
+      </button>
+      <button class="ph-btn" id="fc-refresh">Refresh</button>
+    </div>
+  </div>
+
+  <!-- SUMMARY METRICS -->
+  <div class="card" id="fc-summary-card">
+    <h3>Model comparison (averaged across all zones)</h3>
+    <div class="muted small">Lower MAE/RMSE/MAPE/SMAPE = better. Higher R² = better. The ensemble row should win on most metrics.</div>
+    <div class="table-wrap" style="margin-top:8px;">
+      <table class="basic-table" id="fc-table">
+        <thead>
+          <tr>
+            <th>Model</th><th>MAE</th><th>RMSE</th><th>MAPE %</th><th>R²</th><th>SMAPE %</th><th>Runs</th><th>Last trained</th>
+          </tr>
+        </thead>
+        <tbody><tr><td colspan="8" class="muted">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PREDICTIONS -->
+  <div class="card">
+    <h3>Latest predictions per zone (6h / 12h / 24h)</h3>
+    <div id="fc-predictions" class="grid-2"><div class="muted">Loading…</div></div>
+  </div>
+
+  <!-- EXPLANATIONS -->
+  <div class="card">
+    <h3>How the hybrid pipeline works</h3>
+    <ul style="line-height:1.8">
+      <li><b>Model A (classical ML)</b> — auto-regressive AR(7) with day-of-week Fourier features, fitted by ordinary least squares with ridge regularization.</li>
+      <li><b>Model B (DL-inspired)</b> — three exponential smoothers (α = 0.2, 0.5, 0.8) blended through sigmoid weights learned by gradient descent.</li>
+      <li><b>Ensemble</b> — α·A + (1−α)·B, where α ∈ [0,1] is chosen by RMSE-minimizing grid-search on the held-out validation slice (last 20 % of the series).</li>
+      <li><b>Data</b> — pulled from <code>risk_scores</code> + <code>risk_scores_augmented</code> (synthetic data injected by the augmentation module).</li>
+      <li><b>Optional Python sidecar</b> — <code>scripts/train_forecast.py</code> upgrades the pipeline to a real XGBoost + LSTM ensemble.</li>
+    </ul>
+  </div>
+
+</section>

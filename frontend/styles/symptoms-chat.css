@@ -1,0 +1,678 @@
+/* ==========================================================
+   Suivi des symptômes — Chat santé ↔ citoyen + Photos
+   Design : aligné sur theme.css (bleu #0d3b66, blanc cassé)
+   ========================================================== */
+
+/* -------- Layout 2 colonnes côté staff (santé / admin) -------- */
+.sc-layout {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 18px;
+  align-items: stretch;
+  margin-top: 18px;
+}
+@media (max-width: 1180px) {
+  .sc-layout { grid-template-columns: 1fr; }
+}
+
+.sc-list-card,
+.sc-chat-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 540px;
+  height: 70vh;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Variante inline (utilisée dans la vue citoyen, panneau plus compact) */
+.sc-chat-inline {
+  display: flex;
+  flex-direction: column;
+  min-height: 360px;
+  height: 460px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  overflow: hidden;
+}
+.sc-chat-inline .sc-head { padding: 12px 14px; }
+.sc-chat-inline .sc-log  { padding: 14px 14px 8px; }
+
+.sc-list-card .sc-head,
+.sc-chat-card .sc-head {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.sc-list-card .sc-head h3,
+.sc-chat-card .sc-head h3 {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+.sc-list-card .sc-head .meta,
+.sc-chat-card .sc-head .meta {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* -------- Filtres (pills cliquables) -------- */
+.sc-filters {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-2);
+  background: #fbfaf6;
+}
+.sc-filter {
+  cursor: pointer;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: all .15s;
+}
+.sc-filter:hover { color: var(--primary); border-color: var(--primary); }
+.sc-filter.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.sc-filter .count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.08);
+  font-size: 11px;
+  font-weight: 700;
+}
+.sc-filter.active .count { background: rgba(255,255,255,.22); }
+
+/* -------- Liste des fils -------- */
+.sc-threads {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+.sc-thread {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-2);
+  cursor: pointer;
+  transition: background .15s;
+  display: flex; flex-direction: column; gap: 4px;
+  position: relative;
+}
+.sc-thread:hover { background: #fbfaf6; }
+.sc-thread.active {
+  background: var(--primary-3);
+  border-left: 3px solid var(--primary);
+  padding-left: 13px;
+}
+.sc-thread .row1 {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.sc-thread .name {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sc-thread .symp {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+.sc-thread .meta-line {
+  font-size: 11.5px;
+  color: var(--muted);
+  display: flex; gap: 8px; align-items: center;
+}
+.sc-thread .preview {
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+/* indicateur discret pour un fil non encore pris en charge */
+.sc-thread.is-pending::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 12px; bottom: 12px;
+  width: 3px;
+  background: var(--primary);
+  border-radius: 2px;
+}
+
+/* status pills réutilisent .pill mais on ajoute des variantes localisées */
+.pill.status-new        { background: var(--warning-bg); color: var(--warning); }
+.pill.status-in_progress{ background: var(--primary-3);  color: var(--primary); }
+.pill.status-resolved   { background: var(--safe-bg);    color: var(--safe);    }
+
+/* -------- Panneau de chat -------- */
+.sc-chat-card .sc-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.sc-chat-card .sc-head .left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.sc-chat-card .sc-head .avatar {
+  width: 38px; height: 38px;
+  border-radius: 999px;
+  background: var(--primary-3);
+  color: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px;
+  flex-shrink: 0;
+}
+.sc-chat-card .sc-head .info { min-width: 0; }
+.sc-chat-card .sc-head .info .title {
+  font-size: 14px; font-weight: 700; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.sc-chat-card .sc-head .info .sub {
+  font-size: 12px; color: var(--muted);
+}
+.sc-chat-card .sc-head .right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.sc-status-select {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sc-log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 18px 12px;
+  background: linear-gradient(180deg, #fbfaf6 0%, var(--surface) 100%);
+  display: flex; flex-direction: column; gap: 0;
+}
+
+/* ------- Carte « Symptôme initial » ------- */
+.sc-initial-card {
+  margin: 0 0 18px;
+  background: #f0f4fa;
+  border: 1px solid #d8e2ef;
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+.sc-initial-pill {
+  display: inline-block;
+  background: var(--primary);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  letter-spacing: .03em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.sc-initial-body { color: var(--ink); font-size: 13.5px; line-height: 1.45; }
+.sc-initial-body strong { color: var(--ink); margin-right: 6px; }
+.sc-initial-note { margin-top: 6px; color: var(--muted); font-size: 13px; white-space: pre-wrap; }
+
+/* ------- Ligne d'un message : avatar + (bulle + meta sous la bulle) ------- */
+.sc-msg-row {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 14px;
+  align-items: flex-end;
+  width: 100%;
+  max-width: 100%;
+}
+.sc-msg-row.from-citizen { flex-direction: row; }
+.sc-msg-row.from-staff   { flex-direction: row-reverse; }
+
+/* messages groupés : on rapproche, et on cache l'avatar (espace gardé pour l'alignement) */
+.sc-msg-row.is-grouped { margin-top: -8px; margin-bottom: 4px; }
+.sc-msg-row.is-grouped .sc-avatar-msg { background: transparent; color: transparent; box-shadow: none; }
+
+.sc-avatar-msg {
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--primary);
+  text-transform: uppercase;
+  user-select: none;
+  letter-spacing: .02em;
+}
+.sc-avatar-msg.sc-av-citizen { background: #6b7280; }
+.sc-avatar-msg.sc-av-staff   { background: var(--primary); }
+
+.sc-msg-block {
+  display: flex;
+  flex-direction: column;
+  max-width: calc(100% - 50px);
+  min-width: 0;
+}
+.sc-msg-row.from-citizen .sc-msg-block { align-items: flex-start; }
+.sc-msg-row.from-staff   .sc-msg-block { align-items: flex-end; }
+
+/* la bulle elle-même */
+.sc-msg {
+  width: fit-content;
+  width: -moz-fit-content;
+  max-width: 100%;
+  padding: 8px 12px;
+  border-radius: 16px;
+  font-size: 13.5px;
+  line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  box-shadow: 0 1px 1px rgba(15, 23, 42, .04);
+}
+.sc-msg-row.from-citizen .sc-msg {
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--border-2);
+  border-bottom-left-radius: 4px;
+}
+.sc-msg-row.from-staff .sc-msg {
+  background: var(--primary);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.sc-msg-row.is-grouped.from-citizen .sc-msg { border-bottom-left-radius: 16px; border-top-left-radius: 6px; }
+.sc-msg-row.is-grouped.from-staff   .sc-msg { border-bottom-right-radius: 16px; border-top-right-radius: 6px; }
+
+/* méta SOUS la bulle : Auteur · heure ✓✓ */
+.sc-msg-meta {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 10.5px;
+  color: var(--muted);
+  align-items: center;
+  line-height: 1.2;
+}
+.sc-msg-meta .who { font-weight: 600; color: var(--ink); }
+.sc-msg-meta .when { white-space: nowrap; }
+.sc-msg-meta .read-check { color: var(--safe); font-weight: 700; margin-left: 2px; }
+
+.sc-msg-day {
+  align-self: center;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+  background: var(--surface);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  margin: 6px 0;
+}
+
+/* zone de saisie — pill arrondi, sans scrollbar visible (auto-grow JS) */
+.sc-input {
+  display: flex; gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  align-items: flex-end;
+}
+.sc-input textarea {
+  flex: 1;
+  min-height: 38px;
+  max-height: 120px;
+  resize: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 9px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-soft);
+  font-family: inherit;
+  font-size: 13.5px;
+  line-height: 1.4;
+  transition: border-color .15s, background .15s;
+  scrollbar-width: none; /* Firefox */
+}
+.sc-input textarea::-webkit-scrollbar { display: none; } /* WebKit */
+.sc-input textarea:focus {
+  outline: none;
+  background: var(--surface);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-3);
+}
+.sc-input .btn.primary {
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* hint sous le textarea : « Entrée pour envoyer · Maj+Entrée pour nouvelle ligne » */
+.sc-input-hint {
+  font-size: 10.5px;
+  color: var(--muted);
+  padding: 0 14px 10px;
+  margin-top: -2px;
+  text-align: right;
+  background: var(--surface);
+  line-height: 1.3;
+}
+
+/* placeholder vide */
+.sc-empty {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--muted);
+  gap: 10px;
+}
+.sc-empty svg { width: 48px; height: 48px; opacity: .35; }
+.sc-empty .t { font-size: 14px; font-weight: 600; color: var(--ink-soft); }
+.sc-empty .s { font-size: 12.5px; max-width: 320px; line-height: 1.5; }
+
+/* -------- Vue citoyen — liste de mes discussions -------- */
+.sc-mythreads { display: flex; flex-direction: column; gap: 6px; }
+.sc-mythread {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+  transition: all .15s;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.sc-mythread:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+.sc-mythread.active {
+  border-color: var(--primary);
+  background: var(--primary-3);
+}
+.sc-mythread .left { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sc-mythread .symp { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.sc-mythread .meta { font-size: 11.5px; color: var(--muted); }
+.sc-mythread .right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.sc-mythread .unread-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 0 3px var(--danger-bg);
+}
+
+/* ==========================================================
+   Signalements citoyens — Upload de photo
+   ========================================================== */
+
+.cr-upload {
+  margin-bottom: 14px;
+}
+.cr-upload-row {
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.cr-upload-btn {
+  flex: 1;
+  min-width: 140px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border);
+  background: var(--bg-soft);
+  color: var(--ink-soft);
+  font-weight: 600; font-size: 13px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.cr-upload-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-3);
+}
+.cr-upload-btn svg {
+  width: 16px; height: 16px;
+}
+.cr-upload input[type="file"] { display: none; }
+
+.cr-preview {
+  margin-top: 10px;
+  position: relative;
+  display: none;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: #000;
+}
+.cr-preview.has-image { display: block; }
+.cr-preview img {
+  display: block;
+  width: 100%;
+  max-height: 260px;
+  object-fit: contain;
+  background: #111;
+}
+.cr-preview .remove {
+  position: absolute;
+  top: 8px; right: 8px;
+  width: 30px; height: 30px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(220,38,38,.9);
+  color: #fff;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 700;
+  line-height: 1;
+  box-shadow: var(--shadow);
+}
+.cr-preview .remove:hover { background: var(--danger); }
+
+/* Vignette dans la liste des signalements */
+/* ==========================================================
+   Liste « Signalements récents » — cartes compactes avec mini-photo
+   ========================================================== */
+.cr-feed { display: flex; flex-direction: column; gap: 10px; }
+.cr-card {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  transition: border-color .15s, box-shadow .15s;
+}
+.cr-card:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+.cr-card .cr-thumb {
+  flex-shrink: 0;
+  width: 84px; height: 84px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border-2);
+  background: #f5f3ed;
+  margin: 0;
+}
+.cr-card .cr-thumb img {
+  display: block;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  cursor: zoom-in;
+  transition: transform .25s;
+}
+.cr-card .cr-thumb img:hover { transform: scale(1.05); }
+.cr-card .cr-thumb.empty {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted);
+  background: var(--bg-soft);
+}
+.cr-card .cr-thumb.empty svg { width: 28px; height: 28px; opacity: .35; }
+.cr-card .cr-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.cr-card .cr-row1 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cr-card .cr-author {
+  font-weight: 600; color: var(--ink); font-size: 13.5px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  min-width: 0;
+}
+.cr-card .cr-meta {
+  font-size: 11.5px; color: var(--muted);
+  display: flex; gap: 6px; align-items: center;
+  text-transform: capitalize;
+}
+.cr-card .cr-desc {
+  font-size: 12.5px; color: var(--ink-soft);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+@media (max-width: 520px) {
+  .cr-card { flex-direction: column; }
+  .cr-card .cr-thumb { width: 100%; height: 160px; }
+}
+
+/* ==========================================================
+   Bloc « Analyse IA » — affiché sous la description du citoyen
+   et juste après l'envoi du formulaire (cr-ai-flash).
+   Variante compacte/repliable utilisée dans la liste des cartes.
+   ========================================================== */
+.cr-ai {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #d6e0ef;
+  background: linear-gradient(180deg, #f3f8ff 0%, #eef3fb 100%);
+  color: #1f2a44;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.cr-ai-flash {
+  margin-top: 10px;
+  animation: cr-ai-flash-in .35s ease-out;
+}
+@keyframes cr-ai-flash-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.cr-ai-head {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 4px;
+}
+.cr-ai-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #0d3b66;
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.cr-ai-model {
+  font-size: 10.5px;
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.cr-ai-body {
+  white-space: pre-wrap;
+  color: #1f2a44;
+}
+
+/* ----- Variante compacte (dans le feed) — repliable via <details> ----- */
+details.cr-ai-compact {
+  margin-top: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+details.cr-ai-compact > summary {
+  list-style: none;             /* enlève le triangle natif */
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+details.cr-ai-compact > summary::-webkit-details-marker { display: none; }
+details.cr-ai-compact .cr-ai-toggle {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: #0d3b66;
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(13,59,102,.08);
+  transition: background .15s;
+}
+details.cr-ai-compact .cr-ai-toggle::after {
+  content: "▾";
+  font-size: 10px;
+  transition: transform .2s;
+}
+details.cr-ai-compact[open] .cr-ai-toggle { background: rgba(13,59,102,.16); }
+details.cr-ai-compact[open] .cr-ai-toggle::after { transform: rotate(180deg); }
+details.cr-ai-compact[open] .cr-ai-toggle::before {
+  content: "Masquer";
+  margin-right: 2px;
+}
+details.cr-ai-compact:not([open]) .cr-ai-toggle::before {
+  content: "Voir l'analyse";
+  margin-right: 2px;
+}
+details.cr-ai-compact .cr-ai-toggle > span { display: none; } /* on cache le texte fallback */
+details.cr-ai-compact > .cr-ai-body {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #c7d4ea;
+}
+
+/* Quand la carte affiche une analyse, le texte de la description ne doit
+   plus être tronqué — sinon on voit juste 2 lignes puis tout disparaît. */
+.cr-card .cr-desc { -webkit-line-clamp: unset; overflow: visible; }
+@media (max-width: 520px) {
+  details.cr-ai-compact .cr-ai-model { display: none; }
+}
+
+/* Lightbox simple pour agrandir */
+.cr-lightbox {
+  position: fixed; inset: 0;
+  background: rgba(15,23,42,.88);
+  display: none;
+  align-items: center; justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  cursor: zoom-out;
+}
+.cr-lightbox.open { display: flex; }
+.cr-lightbox img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+}

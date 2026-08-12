@@ -1,0 +1,174 @@
+<section class="admin-page">
+
+  <!-- HERO -->
+  <div class="admin-hero">
+    <div class="ah-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2L4 5v7c0 5 3.5 9 8 10 4.5-1 8-5 8-10V5l-8-3z"/>
+        <path d="M9 12l2 2 4-4"/>
+      </svg>
+    </div>
+    <div>
+      <h1 class="ah-title">Administrator Panel</h1>
+      <p class="ah-sub">System overview · Charts · Technical tools.</p>
+    </div>
+    <div class="ah-actions">
+      <span class="ah-meta" id="ah-now">—</span>
+      <button class="btn outline" id="adm-refresh">
+        <svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- C12 — Daily health tip (all roles) -->
+  <div class="dash-tip" id="dash-tip">
+    <div class="dash-tip-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 00-4 12.7c.6.5 1 1.2 1 2v.3h6v-.3c0-.8.4-1.5 1-2A7 7 0 0012 2z"/></svg>
+    </div>
+    <div class="dash-tip-body">
+      <div class="dash-tip-title">Daily Health Tip <span class="badge" id="dash-tip-tag">AI</span></div>
+      <p id="dash-tip-text">Stay hydrated and close windows during peak pollution hours. Prefer early morning walks when air quality is good.</p>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="admin-kpis" id="adm-kpis"></div>
+
+  <!-- CHARTS -->
+  <div class="admin-charts">
+    <div class="card chart-card chart-line">
+      <div class="cc-head">
+        <h3>Activity 30 Days</h3>
+        <span class="cc-sub">Alerts · Reports · Symptoms (per day)</span>
+      </div>
+      <div class="cc-body"><canvas id="chart-activity"></canvas></div>
+    </div>
+
+    <div class="card chart-card chart-donut">
+      <div class="cc-head">
+        <h3>Alert Severity</h3>
+        <span class="cc-sub">Distribution over 30d</span>
+      </div>
+      <div class="cc-body"><canvas id="chart-severity"></canvas></div>
+    </div>
+
+    <div class="card chart-card chart-bar">
+      <div class="cc-head">
+        <h3>Top 5 Zones</h3>
+        <span class="cc-sub">Reports 30 Days</span>
+      </div>
+      <div class="cc-body"><canvas id="chart-zones"></canvas></div>
+    </div>
+
+    <div class="card chart-card chart-bar">
+      <div class="cc-head">
+        <h3>Users by Role</h3>
+        <span class="cc-sub">Active Accounts</span>
+      </div>
+      <div class="cc-body"><canvas id="chart-roles"></canvas></div>
+    </div>
+  </div>
+
+  <!-- RECENT ACTIVITY -->
+  <div class="admin-activity">
+    <div class="card">
+      <h3 class="ac-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-7-3 18-6-7-9-4z"/></svg>
+        Latest Reports
+      </h3>
+      <div id="ac-reports" class="ac-list"><div class="empty">Loading…</div></div>
+    </div>
+    <div class="card">
+      <h3 class="ac-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 003.4 0"/></svg>
+        Latest Alerts
+      </h3>
+      <div id="ac-alerts" class="ac-list"><div class="empty">Loading…</div></div>
+    </div>
+    <div class="card">
+      <h3 class="ac-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
+        Latest Users
+      </h3>
+      <div id="ac-users" class="ac-list"><div class="empty">Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- ADMIN TOOLS PANEL -->
+  <div class="admin-tools">
+    <div class="card">
+      <h3 class="ac-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 008 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Administration Tools
+      </h3>
+      <div class="tools-grid">
+        <button class="tool-btn" id="tool-recompute">
+          <span class="tool-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10"/></svg>
+          </span>
+          <span class="tool-body">
+            <b>Recalculate Risk Scores</b>
+            <small>Recompute for all zones</small>
+          </span>
+        </button>
+        <button class="tool-btn" id="tool-purge">
+          <span class="tool-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+          </span>
+          <span class="tool-body">
+            <b>Purge Auto-Alerts</b>
+            <small>Remove [AUTO:*] > 7 days</small>
+          </span>
+        </button>
+        <a class="tool-btn" href="../backend/api/pdf.php?period=monthly" target="_blank">
+          <span class="tool-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+          </span>
+          <span class="tool-body">
+            <b>Export Monthly Report</b>
+            <small>Complete PDF summary</small>
+          </span>
+        </a>
+        <button class="tool-btn" id="tool-reload-status">
+          <span class="tool-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-6.22-8.56"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </span>
+          <span class="tool-body">
+            <b>Check Global Status</b>
+            <small>Force recalculation</small>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 class="ac-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>
+        Database
+      </h3>
+      <div id="db-stats" class="db-stats"><div class="empty">Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- ARCHIVED PDF REPORTS -->
+  <div class="card admin-pdfs-card">
+    <h3 class="ac-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+        <path d="M14 2v6h6"/>
+        <path d="M9 13h6M9 17h6M9 9h2"/>
+      </svg>
+      Archived PDF Reports
+      <span class="ac-sub" id="adm-pdfs-count">—</span>
+      <button class="btn outline btn-sm" id="adm-pdfs-refresh" style="margin-left:auto">
+        <svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10"/></svg>
+        Refresh
+      </button>
+    </h3>
+    <div id="adm-pdfs-list" class="adm-pdfs-list">
+      <div class="empty">Loading…</div>
+    </div>
+  </div>
+
+</section>

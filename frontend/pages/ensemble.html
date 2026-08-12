@@ -1,0 +1,35 @@
+<section class="page sci-page ensemble-page" id="page-ensemble">
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="8" y="14" width="8" height="7" rx="1"/><path d="M6.5 10v2M17.5 10v2M12 12v2"/></svg>
+      </div>
+      <div>
+        <h1>Ensemble Adaptatif + Correction Résiduelle + Trust</h1>
+        <div class="ph-sub">Pondération dynamique (softmax) des modèles, correction résiduelle, quantification d'incertitude et score de confiance (Trust).</div>
+      </div>
+    </div>
+    <div class="ph-actions"><span id="en-demo-badge" class="pill info" style="display:none">⚠ Modèle non entraîné</span><button class="btn" id="en-refresh">Rafraîchir</button></div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card"><h3>Poids de l'ensemble (softmax)</h3><div class="chart-box"><canvas id="en-weights"></canvas></div></div>
+    <div class="card"><h3>Correction résiduelle (24h)</h3><div class="chart-box"><canvas id="en-residual"></canvas></div></div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>Membres de l'ensemble</h3>
+    <div class="table-wrap" style="margin-top:8px"><table class="basic-table sci-table" id="en-members">
+      <thead><tr><th>Modèle</th><th>R²</th><th>F1</th><th>RMSE</th><th>Latence</th><th>Score</th><th>Poids</th></tr></thead>
+      <tbody><tr><td colspan="7" class="muted">Chargement…</td></tr></tbody>
+    </table></div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>Incertitude &amp; Trust par zone (IC 90%)</h3>
+    <div class="table-wrap" style="margin-top:8px"><table class="basic-table sci-table" id="en-trust">
+      <thead><tr><th>Zone</th><th>Prédiction</th><th>IC 90%</th><th>Incertitude</th><th>Confiance</th><th>Trust</th></tr></thead>
+      <tbody><tr><td colspan="6" class="muted">Chargement…</td></tr></tbody>
+    </table></div>
+  </div>
+</section>
