@@ -1,37 +1,52 @@
-"""PART 9 - Statistical significance: Wilcoxon signed-rank (best vs each model)
-and Friedman test across all models. Reference: Wilcoxon (1945); Demšar (2006).
+"""Tests statistiques sur des erreurs réellement produites par les modèles.
+
+Les fonctions de ce module ne génèrent aucune donnée. Elles doivent recevoir les
+vecteurs d'erreurs issus du même jeu de test réel et de la même zone/horizon.
 """
 from __future__ import annotations
 import numpy as np
 
 
+ALLOWED_MODELS = (
+    "Random Forest", "XGBoost + Fuzzy", "LSTM", "BiLSTM Simple",
+    "BiLSTM+MultiHead Attn", "BiLSTM+AE", "CNN+AE",
+)
+
+
 def wilcoxon_vs(errors_best, errors_other):
     from scipy import stats
-    stat, p = stats.wilcoxon(errors_best, errors_other, alternative="less")
+    best = np.asarray(errors_best, dtype=float)
+    other = np.asarray(errors_other, dtype=float)
+    if best.size == 0 or other.size == 0 or best.size != other.size:
+        raise ValueError("Les erreurs doivent être non vides et alignées sur les mêmes observations réelles.")
+    stat, p = stats.wilcoxon(best, other, alternative="less")
     return {"stat": float(stat), "p_value": float(p), "significant": bool(p < 0.05)}
 
 
 def friedman(*error_arrays):
     from scipy.stats import friedmanchisquare
-    stat, p = friedmanchisquare(*error_arrays)
+    arrays = [np.asarray(a, dtype=float) for a in error_arrays]
+    if len(arrays) < 3 or any(a.size == 0 for a in arrays):
+        raise ValueError("Friedman nécessite au moins trois vecteurs d'erreurs réels non vides.")
+    if len({a.size for a in arrays}) != 1:
+        raise ValueError("Les vecteurs d'erreurs doivent être alignés et de même longueur.")
+    stat, p = friedmanchisquare(*arrays)
     return {"stat": float(stat), "p_value": float(p), "significant": bool(p < 0.05)}
 
 
 def compare_best(errors_by_model, best_name):
-    best = np.asarray(errors_by_model[best_name])
+    if best_name not in errors_by_model:
+        raise KeyError(f"Modèle de référence absent : {best_name}")
+    best = np.asarray(errors_by_model[best_name], dtype=float)
     rows = []
     for name, err in errors_by_model.items():
         if name == best_name:
             continue
-        rows.append({"comparison": f"{best_name} vs {name}", **wilcoxon_vs(best, np.asarray(err))})
+        if name not in ALLOWED_MODELS:
+            continue
+        rows.append({"comparison": f"{best_name} vs {name}", **wilcoxon_vs(best, np.asarray(err, dtype=float))})
     return rows
 
 
 if __name__ == "__main__":
-    rng = np.random.default_rng(0)
-    errs = {"FULL SYSTEM": np.abs(rng.normal(0, 5, 200)),
-            "AR(7)": np.abs(rng.normal(0, 17, 200)),
-            "XGBoost": np.abs(rng.normal(0, 10, 200))}
-    for r in compare_best(errs, "FULL SYSTEM"):
-        print(r)
-    print("Friedman:", friedman(*errs.values()))
+    print("Aucune donnée synthétique n'est générée. Fournissez des erreurs réelles alignées pour exécuter un test statistique.")

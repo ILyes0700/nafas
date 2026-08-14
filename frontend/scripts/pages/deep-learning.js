@@ -1,6 +1,6 @@
 /**
- * Deep Learning page (PART 5) — BiLSTM + Multi-Head Attention + XGBoost hybrid.
- * Data from /backend/api/deep-learning.php. Renders the DL comparison table,
+ * Deep Learning page — classement des sept modèles autorisés.
+ * Data from /backend/api/deep-learning.php. Renders the train/validation/test table,
  * per-zone multi-horizon predictions, actual-vs-predicted chart and a 24×24
  * attention heatmap rendered as a CSS grid.
  */
@@ -19,12 +19,10 @@ window.initDeepLearning = async function () {
       d = await r.json();
     } catch (e) {
       $('#dl-table').querySelector('tbody').innerHTML =
-        `<tr><td colspan="9" class="muted">Erreur : ${e.message}. Vérifiez le backend PHP (WAMP).</td></tr>`;
+        `<tr><td colspan="11" class="muted">Erreur réelle du backend : ${e.message}. Vérifiez le journal PHP.</td></tr>`;
       return;
     }
-    $('#dl-demo-badge').style.display = d.demo ? '' : 'none';
-    if (window.GT && GT.notTrainedGuard && GT.notTrainedGuard(d.demo)) return;
-    renderTable(d.models);
+    renderTable(d.models || []);
     renderVs(d.models);
     renderPredictions(d.predictions);
     renderSeries(d.series);
@@ -33,47 +31,48 @@ window.initDeepLearning = async function () {
 
   function renderTable(models) {
     const tb = $('#dl-table').querySelector('tbody');
-    if (!models || !models.length) { tb.innerHTML = '<tr><td colspan="9" class="muted">Aucune donnée.</td></tr>'; return; }
-    let bestRmse = Math.min.apply(null, models.map(m => m.rmse));
+    if (!models || !models.length) {
+      tb.innerHTML = '<tr><td colspan="11" class="muted">Aucun résultat réel. Lancez l\'entraînement sur les sept zones.</td></tr>';
+      return;
+    }
+    const esc = (v) => String(v == null ? '—' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     tb.innerHTML = models.map(m => `
-      <tr class="${m.rmse === bestRmse ? 'sci-row-best' : ''}">
-        <td><b>${m.rmse === bestRmse ? '✅ ' : ''}${m.name}</b></td>
-        <td class="muted small">${m.params}</td>
-        <td>${m.acc}</td><td class="${m.rmse === bestRmse ? 'cell-best' : ''}">${m.f1}</td>
-        <td>${m.mae}</td><td class="${m.rmse === bestRmse ? 'cell-best' : ''}">${m.rmse}</td>
-        <td>${m.r2}</td><td>${m.auc}</td><td class="muted">${m.latency}</td></tr>`).join('');
+      <tr>
+        <td>${esc(m.city_id)}</td>
+        <td>${esc(m.horizon)}</td>
+        <td><b>${esc(m.model_name || m.name)}</b></td>
+        <td>${esc(m.split)}</td>
+        <td>${esc(m.acc)}</td>
+        <td>${esc(m.f1)}</td>
+        <td>${esc(m.mae)}</td>
+        <td>${esc(m.rmse)}</td>
+        <td>${esc(m.r2)}</td>
+        <td>${esc(m.auc)}</td>
+        <td class="muted">${esc(m.latency)}</td>
+      </tr>`).join('');
   }
 
-  // Real LSTM vs BiLSTM head-to-head, derived from the real model metrics.
+  // Classement comparatif réel : toutes les modèles autorisés, test final uniquement.
   function renderVs(models) {
     const box = $('#dl-vs');
     if (!box) return;
-    if (!models || !models.length) { box.innerHTML = '<div class="muted">Aucune donnée.</div>'; return; }
-    const lstm = models.find(m => /lstm/i.test(m.name) && !/bi/i.test(m.name));
-    const bilstm = models.find(m => /bilstm\s*simple/i.test(m.name)) || models.find(m => /bilstm/i.test(m.name) && !/attn|attention/i.test(m.name));
-    if (!lstm || !bilstm) {
-      box.innerHTML = '<div class="muted">Comparaison indisponible : lancez l\'entraînement LSTM + BiLSTM (TensorFlow requis).</div>';
-      return;
-    }
-    const row = (label, a, b, lowerBetter) => {
-      const aw = lowerBetter ? (a <= b) : (a >= b);
-      return `<tr><td>${label}</td>
-        <td class="${aw ? 'cell-best' : ''}">${a}${aw ? ' ✅' : ''}</td>
-        <td class="${!aw ? 'cell-best' : ''}">${b}${!aw ? ' ✅' : ''}</td></tr>`;
-    };
-    box.innerHTML = `
-      <div class="table-wrap" style="margin-top:8px">
-        <table class="basic-table sci-table">
-          <thead><tr><th>Métrique</th><th>LSTM</th><th>BiLSTM</th></tr></thead>
-          <tbody>
-            ${row('RMSE (plus bas = mieux)', lstm.rmse, bilstm.rmse, true)}
-            ${row('MAE (plus bas = mieux)', lstm.mae, bilstm.mae, true)}
-            ${row('F1 (plus haut = mieux)', lstm.f1, bilstm.f1, false)}
-            ${row('R² (plus haut = mieux)', lstm.r2, bilstm.r2, false)}
-            ${row('AUC (plus haut = mieux)', lstm.auc, bilstm.auc, false)}
-          </tbody>
-        </table>
-      </div>`;
+    const allowed = ['Random Forest', 'XGBoost + Fuzzy', 'LSTM', 'BiLSTM Simple', 'BiLSTM+MultiHead Attn', 'BiLSTM+AE', 'CNN+AE'];
+    const rows = (models || []).filter(m => m.split === 'test' && allowed.includes(m.model_name || m.name));
+    if (!rows.length) { box.innerHTML = '<div class="muted">Aucune métrique de test réelle disponible.</div>'; return; }
+    const byHorizon = {};
+    rows.forEach(m => {
+      const h = m.horizon || '1h';
+      byHorizon[h] = byHorizon[h] || [];
+      byHorizon[h].push(m);
+    });
+    const esc = (v) => String(v == null ? '—' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const blocks = ['1h', '6h', '24h'].filter(h => byHorizon[h]).map(h => {
+      const ranked = byHorizon[h].slice().sort((a, b) => Number(a.rmse) - Number(b.rmse));
+      return `<h4 style="margin:12px 0 6px">Classement réel ${h}</h4><div class="table-wrap"><table class="basic-table sci-table"><thead><tr><th>Rang</th><th>Modèle</th><th>RMSE TEST</th><th>F1 TEST</th><th>R² TEST</th></tr></thead><tbody>${ranked.map((m, i) => `<tr class="${i === 0 ? 'sci-row-best' : ''}"><td>${i + 1}</td><td><b>${esc(m.model_name || m.name)}</b></td><td>${esc(m.rmse)}</td><td>${esc(m.f1)}</td><td>${esc(m.r2)}</td></tr>`).join('')}</tbody></table></div>`;
+    }).join('');
+    box.innerHTML = blocks || '<div class="muted">Aucun classement réel disponible.</div>';
   }
 
   function renderPredictions(preds) {
@@ -91,7 +90,7 @@ window.initDeepLearning = async function () {
             <div class="fh fh-${h.level}">
               <div class="fh-h">+${h.h}h</div>
               <div class="fh-v">${h.predicted}</div>
-              <div class="fh-l muted small">${h.level} · ${Math.round(h.conf * 100)}%</div>
+              <div class="fh-l muted small">${h.level} · ${Math.round(h.conf * 100)}%<br><span class="forecast-model">${h.model || 'modèle sélectionné sur validation'}</span>${h.validation_rmse != null ? ` · RMSE val ${h.validation_rmse}` : ''}${h.test_rmse != null ? ` · RMSE test ${h.test_rmse}` : ''}</div>
             </div>`).join('')}
         </div>
       </div>`).join('');
@@ -106,7 +105,7 @@ window.initDeepLearning = async function () {
         { label: 'Réel', data: s.actual, borderColor: NAVY, backgroundColor: 'transparent', pointRadius: 0, tension: 0.25 },
         { label: 'Prédit (modèle optimal)', data: s.predicted, borderColor: RED, borderDash: [5, 4], backgroundColor: 'transparent', pointRadius: 0, tension: 0.25 },
       ] },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { boxWidth: 12, font: { size: 11 } } }, title: { display: !!s.zone, text: s.zone ? `Zone ${s.zone} · meilleur modèle (FULL SYSTEM) · RMSE=${s.rmse}` : '', font: { size: 11 } } } },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { boxWidth: 12, font: { size: 11 } } }, title: { display: !!s.zone, text: s.zone ? `Zone ${s.zone} · modèle sélectionné sur validation (${s.model || '—'}) · RMSE test=${s.rmse}` : '', font: { size: 11 } } } },
     });
   }
 
@@ -124,18 +123,21 @@ window.initDeepLearning = async function () {
       const light = 92 - t * 62; // HSL lightness (clair = faible, sombre = fort)
       return `hsl(210, 65%, ${light}%)`;
     };
-    let html = '<div class="attn-grid" style="grid-template-columns: 22px repeat(24, 1fr);">';
+    const rows = w.length;
+    const cols = rows && Array.isArray(w[0]) ? w[0].length : 0;
+    if (!rows || !cols) { box.innerHTML = '<div class="muted">Matrice d’attention vide.</div>'; return; }
+    let html = `<div class="attn-grid" style="grid-template-columns: 22px repeat(${cols}, 1fr);">`;
     html += '<div class="attn-corner"></div>';
-    for (let j = 0; j < 24; j++) html += `<div class="attn-hdr">${j % 3 === 0 ? j : ''}</div>`;
-    for (let i = 0; i < 24; i++) {
-      html += `<div class="attn-rowhdr">${i % 3 === 0 ? i : ''}</div>`;
-      for (let j = 0; j < 24; j++) {
+    for (let j = 0; j < cols; j++) html += `<div class="attn-hdr">${j % 6 === 0 ? j : ''}</div>`;
+    for (let i = 0; i < rows; i++) {
+      html += `<div class="attn-rowhdr">${i % 6 === 0 ? i : ''}</div>`;
+      for (let j = 0; j < cols; j++) {
         const v = w[i][j];
         html += `<div class="attn-cell" style="background:${cell(v)}" title="h${i}←h${j} : ${v}"></div>`;
       }
     }
     html += '</div>';
-    html += '<div class="attn-legend muted small">Axe X = heures observées · Axe Y = heure prédite · plus sombre = plus influent</div>';
+    html += `<div class="attn-legend muted small">Axe X = heures observées · Axe Y = heure prédite · matrice ${rows}×${cols} · plus sombre = plus influent</div>`;
     box.innerHTML = html;
   }
 

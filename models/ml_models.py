@@ -1,7 +1,7 @@
 """PART 4 - Classical ML module: Random Forest + XGBoost (Optuna-tuned),
 SHAP (global + local), LIME, ROC AUC, walk-forward CV.
 
-Feature vector = the shared 27 features (PART 3). fuzzy_score_type2 is a key
+Feature vector = the shared 35 features from train_all.py. fuzzy_score_type2 is a key
 input coming from models/fuzzy_type2.py.
 
 Optional deps: xgboost, optuna, shap, lime. The module degrades gracefully:
@@ -17,11 +17,14 @@ from sklearn.model_selection import TimeSeriesSplit
 from sklearn.preprocessing import label_binarize
 
 FEATURE_NAMES = [
-    "aqi_t1", "aqi_t2", "aqi_t3", "aqi_t4", "aqi_t5", "aqi_t6", "aqi_t7",
-    "aqi_t24", "aqi_t168", "fuzzy_score_type2", "uncertainty_lower",
-    "uncertainty_upper", "pm25", "pm10", "so2", "no2", "temperature",
-    "humidity", "wind_speed", "wind_direction", "pressure", "uv_index",
-    "forecast_3h", "forecast_6h", "hour_of_day", "is_weekend", "season",
+    "aqi_current",
+    *(f"aqi_lag_{k}" for k in (1, 2, 3, 4, 5, 6, 7, 24, 168)),
+    "aqi_delta_1h", "aqi_delta_6h", "aqi_mean_6h", "aqi_mean_24h", "aqi_std_24h",
+    "fuzzy_score_type2", "uncertainty_lower", "uncertainty_upper",
+    "pm25", "pm10", "so2", "no2", "o3", "co", "dust",
+    "temperature", "humidity", "wind_speed", "wind_direction",
+    "pressure", "precipitation", "cloud_cover",
+    "hour_of_day", "is_weekend", "season",
 ]
 HORIZONS = ["1h", "6h", "24h"]
 CLASSES = [0, 1, 2, 3]  # SAFE / WARNING / CRITICAL / HAZARDOUS

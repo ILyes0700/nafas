@@ -3,14 +3,10 @@
     <h1>BiLSTM + Autoencoder</h1>
     <p class="muted">
       Representation latente apprise par autoencodeur, puis prevision
-      bidirectionnelle. Entraine uniquement sur les 80% les plus anciens des
-      donnees reelles Open-Meteo / CAMS.
+bidirectionnelle. Entraînée sur 70 % des données réelles, vérifiée sur 10 % de validation et testée sur les 20 % les plus récents Open-Meteo / CAMS.
     </p>
   </div>
   <div class="page-head-actions">
-    <span id="bae-demo-badge" class="badge badge-warn" style="display:none">
-      Modele non entraine
-    </span>
     <button id="bae-refresh" class="btn btn-ghost">Actualiser</button>
   </div>
 </div>
@@ -18,7 +14,7 @@
 <div class="card">
   <h2>Architecture</h2>
   <div class="bae-arch">
-    <div class="bae-step"><b>Fenetre 24 h</b><span class="muted small">15 variables reelles</span></div>
+    <div class="bae-step"><b>Fenêtre adaptative</b><span class="muted small">24 h court terme / 72 h +24 h</span></div>
     <div class="bae-arrow">-&gt;</div>
     <div class="bae-step"><b>Encodeur LSTM</b><span class="muted small">compression</span></div>
     <div class="bae-arrow">-&gt;</div>
@@ -29,8 +25,8 @@
     <div class="bae-step"><b>AQI t+h</b><span class="muted small">1 h / 6 h / 24 h</span></div>
   </div>
   <p class="muted small" style="margin-top:10px">
-    L'autoencodeur est entraine en reconstruction sur les seules donnees
-    d'entrainement. Son erreur de reconstruction sert aussi de signal
+    L'autoencodeur est entraîné en reconstruction sur les seules données
+    d'entraînement. Validation et test restent séparés. Son erreur de reconstruction sert aussi de signal
     d'anomalie : une fenetre mal reconstruite correspond en general a un
     episode de pollution atypique.
   </p>
@@ -42,12 +38,12 @@
     <table id="bae-table" class="table">
       <thead>
         <tr>
-          <th>Modele</th><th>Horizon</th><th>MAE</th><th>RMSE</th>
+          <th>Modele</th><th>Horizon</th><th>Partition</th><th>MAE</th><th>RMSE</th>
           <th>MAPE</th><th>R&sup2;</th><th>Latence</th>
         </tr>
       </thead>
       <tbody>
-        <tr><td colspan="7" class="muted">Chargement...</td></tr>
+        <tr><td colspan="8" class="muted">Chargement...</td></tr>
       </tbody>
     </table>
   </div>

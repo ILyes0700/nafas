@@ -22,14 +22,14 @@ DECISION SUR LES FEATURES (imposee par la section 3.3 du prompt)
 sont PAS reconstituables honnetement -> ils sont RETIRES du vecteur.
 En compensation, open_data expose 5 variables reelles que l'ancien pipeline
 n'avait pas : o3, co, dust, precipitation, cloud_cover -> elles sont AJOUTEES.
-Bilan : 27 - 3 + 5 = 29 features. Voir FEATURE_NAMES dans train_all.py.
+Bilan : les modèles classiques et profonds partagent désormais 35 features. Voir FEATURE_NAMES dans train_all.py et deep_models.py.
 
 SPLIT (imposee par la section 3.6)
 ----------------------------------
-Split chronologique strict 80/20 par ville, sur la serie reelle triee par
-temps. Train = les 80% les plus ANCIENS. Test = les 20% les plus RECENTS.
-Aucun marqueur _synth / _holdout ne subsiste. Cette regle s'applique a tous
-les modeles sans exception (AR(7), RF, XGBoost, BiLSTM, BiLSTM+AE, Fuzzy T2).
+Split chronologique strict 70/10/20 par ville, sur la serie reelle triee par
+temps. Train = 70% anciens, validation = 10% suivants, test = 20% recents.
+Aucun marqueur _synth / _holdout ne subsiste. Cette règle s'applique aux sept modèles
+autorisés : RF, XGBoost+Fuzzy, LSTM, BiLSTM Simple, BiLSTM+Attention, BiLSTM+AE et CNN+AE.
 """
 from __future__ import annotations
 
@@ -47,7 +47,9 @@ except ImportError:  # import en script direct (python models/data_loader.py)
 # Configuration
 # --------------------------------------------------------------------------
 
-TRAIN_RATIO = 0.8
+TRAIN_RATIO = 0.70
+VALIDATION_RATIO = 0.10
+TEST_RATIO = 0.20
 
 # Nombre max d'heures consecutives manquantes que l'on accepte de combler par
 # interpolation lineaire. Au-dela, on laisse le NaN : c'est un vrai trou de
@@ -148,15 +150,31 @@ def load_city_series(conn, city_key: str) -> pd.DataFrame:
 # Split chronologique
 # --------------------------------------------------------------------------
 
-def split_frame(df: pd.DataFrame, train_ratio: float = TRAIN_RATIO):
-    """Split chronologique 80/20 (section 3.6). Aucun shuffle, jamais."""
-    cut = int(len(df) * train_ratio)
-    return df.iloc[:cut].copy(), df.iloc[cut:].copy()
+def split_frame(df: pd.DataFrame, train_ratio: float = TRAIN_RATIO,
+                validation_ratio: float = VALIDATION_RATIO):
+    """Split chronologique 70/10/20, sans melange.
+
+    Retourne explicitement train, validation et test. Les anciennes fonctions
+    qui ne consommaient que deux partitions doivent etre adaptees plutot que de
+    reutiliser le test pour choisir un modele.
+    """
+    n = len(df)
+    train_end = int(n * train_ratio)
+    # تجميع عدد صفوف train وvalidation يمنع 0.70 + 0.10 من التحول إلى
+    # 0.799999 بسبب التقريب الثنائي.
+    validation_end = train_end + int(n * validation_ratio)
+    return (df.iloc[:train_end].copy(),
+            df.iloc[train_end:validation_end].copy(),
+            df.iloc[validation_end:].copy())
 
 
-def split_index(df: pd.DataFrame, train_ratio: float = TRAIN_RATIO) -> int:
-    """Indice de la premiere ligne de test. Utilise par train_all.py."""
-    return int(len(df) * train_ratio)
+def split_index(df: pd.DataFrame, train_ratio: float = TRAIN_RATIO,
+                validation_ratio: float = VALIDATION_RATIO):
+    """Retourne les deux frontieres train/validation et validation/test."""
+    n = len(df)
+    train_end = int(n * train_ratio)
+    validation_end = train_end + int(n * validation_ratio)
+    return train_end, validation_end
 
 
 # --------------------------------------------------------------------------
@@ -187,14 +205,16 @@ def build_frames() -> Dict[int, pd.DataFrame]:
                     % (zone["id"], zone["city_key"], len(df))
                 )
                 continue
-            cut = split_index(df)
+            train_end, validation_end = split_index(df)
             print(
                 "[data_loader] zone %s %-14s %6d lignes reelles | "
-                "train %d (%s -> %s) | test %d (%s -> %s)"
+                "train %d (%s -> %s) | validation %d (%s -> %s) | "
+                "test %d (%s -> %s)"
                 % (
                     zone["id"], zone["city_key"], len(df),
-                    cut, df["ts"].iloc[0].date(), df["ts"].iloc[cut - 1].date(),
-                    len(df) - cut, df["ts"].iloc[cut].date(), df["ts"].iloc[-1].date(),
+                    train_end, df["ts"].iloc[0].date(), df["ts"].iloc[train_end - 1].date(),
+                    validation_end - train_end, df["ts"].iloc[train_end].date(), df["ts"].iloc[validation_end - 1].date(),
+                    len(df) - validation_end, df["ts"].iloc[validation_end].date(), df["ts"].iloc[-1].date(),
                 )
             )
             frames[int(zone["id"])] = df

@@ -1,32 +1,30 @@
 <?php
 /**
- * Deep Learning module endpoint — RÉEL uniquement (aucune démo).
+ * Endpoint Deep Learning — résultats réels uniquement.
  *
- * Toutes les données proviennent de la base de données :
- *   - Tableau comparatif           <- model_performance (modèles *LSTM*)
- *   - Prédictions par zone         <- dl_artifacts.predictions
- *   - Série réel vs prédit         <- dl_artifacts.series
- *   - Carte d'attention (SEQ×SEQ)  <- dl_artifacts.attention  (VRAIE attention
- *                                     neuronale extraite du BiLSTM+Attention)
+ * Les métriques sont lues dans :
+ *   - model_validation_performance : validation 10 % ;
+ *   - model_performance : test final 20 % ;
+ *   - dl_artifacts : prédictions et attention réellement produites.
  *
- * dl_artifacts est écrit par models/train_all.py à partir des VRAIS modèles
- * entraînés. Tant que l'entraînement n'a pas tourné, on renvoie des listes
- * vides + demo=true : le frontend affiche un message honnête, JAMAIS de faux
- * chiffres.
- *
- *   GET /backend/api/deep-learning.php
- *   GET /backend/api/deep-learning.php?attention=1
+ * Si l'entraînement n'a pas encore produit de lignes, l'API renvoie une liste
+ * vide et un état explicite, sans inventer de métriques.
  */
 require_once __DIR__ . '/../lib/helpers.php';
 require_once __DIR__ . '/../lib/auth.php';
-require_once __DIR__ . '/../lib/sci_status.php';
 
 $me = auth_user();
 if (!$me || !in_array($me['role'], ['admin'], true)) {
     json_response(['ok' => false, 'error' => 'admin_or_health_only'], 403);
 }
 
-/* --- Lire un artefact JSON écrit par train_all.py --- */
+function dl_allowed_models() {
+    return [
+        'Random Forest', 'XGBoost + Fuzzy', 'LSTM', 'BiLSTM Simple',
+        'BiLSTM+MultiHead Attn', 'BiLSTM+AE', 'CNN+AE'
+    ];
+}
+
 function dl_artifact($key) {
     try {
         $pdo = db();
@@ -41,61 +39,77 @@ function dl_artifact($key) {
     }
 }
 
-/* --- Réponse carte d'attention seule (vraie attention neuronale) --- */
+function dl_metric_rows($table, $split) {
+    // Les noms de table sont des constantes internes, jamais fournis par GET.
+    try {
+        $pdo = db();
+        $allowed = dl_allowed_models();
+        $marks = implode(',', array_fill(0, count($allowed), '?'));
+        $sql = "SELECT model_name, city_id, horizon,
+                       AVG(accuracy) AS acc,
+                       AVG(precision_macro) AS precision_macro,
+                       AVG(recall_macro) AS recall_macro,
+                       AVG(f1_macro) AS f1,
+                       AVG(mae) AS mae,
+                       AVG(rmse) AS rmse,
+                       AVG(mape) AS mape,
+                       AVG(smape) AS smape,
+                       AVG(r_squared) AS r2,
+                       AVG(auc_roc) AS auc,
+                       AVG(avg_latency_ms) AS latency
+                FROM {$table}
+                WHERE horizon IN ('1h','6h','24h')
+                  AND model_name IN ({$marks})
+                GROUP BY model_name, city_id, horizon
+                ORDER BY city_id, horizon, model_name";
+        $st = $pdo->prepare($sql);
+        $st->execute($allowed);
+        $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($rows as &$r) {
+            $r['split'] = $split;
+            $r['city_id'] = (string)$r['city_id'];
+            $r['horizon'] = (string)$r['horizon'];
+            foreach (['acc','precision_macro','recall_macro','f1','mae','rmse','mape','smape','r2','auc','latency'] as $k) {
+                $r[$k] = $r[$k] === null ? null : round((float)$r[$k], 4);
+            }
+        }
+        unset($r);
+        return $rows;
+    } catch (Throwable $e) {
+        // La table de validation n'existe pas avant le premier entraînement :
+        // cela doit rester une liste vide, jamais une valeur fabriquée.
+        return [];
+    }
+}
+
 if (!empty($_GET['attention'])) {
     $att = dl_artifact('attention');
     if (!$att || empty($att['weights'])) {
         json_response([
-            'ok' => false, 'error' => 'not_trained',
-            'message' => "Carte d'attention indisponible : lancez l'entrainement BiLSTM+Attention (TensorFlow requis).",
+            'ok' => false,
+            'error' => 'not_trained',
+            'message' => "Carte d'attention indisponible : entraînez réellement BiLSTM+Attention avec TensorFlow."
         ]);
     }
     json_response(['ok' => true] + $att);
 }
 
-/* --- Tableau comparatif DL : uniquement les VRAIS modèles LSTM --- */
-$demo = !sci_is_trained();
-$models = [];
-try {
-    $pdo = db();
-    $rows = $pdo->query(
-        "SELECT model_name, AVG(accuracy) acc, AVG(f1_macro) f1, AVG(mae) mae,
-                AVG(rmse) rmse, AVG(r_squared) r2, AVG(auc_roc) auc,
-                AVG(avg_latency_ms) latency
-         FROM model_performance
-         WHERE model_name LIKE '%LSTM%' AND horizon='1h'
-         GROUP BY model_name"
-    )->fetchAll();
-    if ($rows) {
-        $demo = false;
-        foreach ($rows as $r) {
-            // v4.0 : libelle enrichi pour distinguer les variantes LSTM.
-$famille = [
-    'BiLSTM+AE'  => 'BiLSTM + Autoencoder (latent 16)',
-    'BiLSTM'     => 'BiLSTM + Attention',
-    'LSTM'       => 'LSTM simple',
-][$r['model_name']] ?? $r['model_name'];
-$models[] = [
-    'name' => $famille, 'params' => '—',
-                'acc' => round((float)$r['acc'], 1), 'f1' => round((float)$r['f1'], 3),
-                'mae' => round((float)$r['mae'], 2), 'rmse' => round((float)$r['rmse'], 2),
-                'r2' => round((float)$r['r2'], 3), 'auc' => round((float)$r['auc'], 3),
-                'latency' => round((float)$r['latency'], 1),
-            ];
-        }
-    }
-} catch (Throwable $e) { /* laisser $models vide -> état vide honnête */ }
-
-/* --- Artefacts réels (prédictions / série / attention) --- */
+$training = dl_metric_rows('model_training_performance', 'train');
+$validation = dl_metric_rows('model_validation_performance', 'validation');
+$test = dl_metric_rows('model_performance', 'test');
+$models = array_merge($training, $validation, $test);
 $predictions = dl_artifact('predictions') ?: [];
 $series = dl_artifact('series') ?: ['labels' => [], 'actual' => [], 'predicted' => []];
-$attention = dl_artifact('attention');   // null possible -> le JS affiche "Indisponible"
+$attention = dl_artifact('attention');
 
 json_response([
-    'ok'          => true,
-    'demo'        => ($demo || !$models),
-    'models'      => $models,
+    'ok' => true,
+    'trained' => !empty($models),
+    'models' => $models,
     'predictions' => $predictions,
-    'series'      => $series,
-    'attention'   => $attention,
+    'series' => $series,
+    'attention' => $attention,
+    'message' => empty($models)
+        ? "Aucun résultat réel disponible. Lancez l'entraînement sur les sept zones."
+        : null,
 ]);

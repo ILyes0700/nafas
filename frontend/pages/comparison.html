@@ -9,12 +9,11 @@
         </svg>
       </div>
       <div>
-        <h1>Tableau de bord — Comparaison des modèles</h1>
-        <div class="ph-sub">Métriques complètes, multi-horizon, étude d'ablation, tests de significativité (Wilcoxon) et comparaison avec la littérature. Cible : Soft Computing (Springer).</div>
+        <h1>Classement comparatif réel des modèles</h1>
+        <div class="ph-sub">Comparaison réelle des sept modèles autorisés sur les zones et horizons disponibles. Les cellules restent vides lorsqu’aucun résultat n’est enregistré.</div>
       </div>
     </div>
     <div class="ph-actions">
-      <span id="cmp-demo-badge" class="pill info" style="display:none">⚠ Modèle non entraîné</span>
       <button class="btn" id="cmp-refresh">Rafraîchir</button>
     </div>
   </div>
@@ -27,7 +26,7 @@
   <!-- 1. MASTER METRICS TABLE -->
   <div class="card">
     <h3>1. Tableau maître des métriques — horizon +1h</h3>
-    <div class="muted small">Vert = meilleur · ✅ = recommandé. RMSE/MAE plus bas = mieux ; F1/R²/AUC plus haut = mieux.</div>
+    <div class="muted small">Classement calculé sur les métriques TEST réellement enregistrées. RMSE/MAE plus bas = mieux ; F1/R²/AUC plus haut = mieux.</div>
     <div class="table-wrap" style="margin-top:8px">
       <table class="basic-table sci-table" id="cmp-master">
         <thead><tr>
@@ -64,8 +63,8 @@
 
   <!-- 3. ABLATION STUDY -->
   <div class="card" style="margin-top:18px">
-    <h3>3. Étude d'ablation — contribution de chaque composant</h3>
-    <div class="muted small">Chaque composant doit apporter ≥ 3 % d'amélioration (exigence Springer).</div>
+    <h3>3. Classement réel — comparaison des performances</h3>
+    <div class="muted small">Le classement est construit à partir des résultats TEST réels, sans ajout de chiffres de référence.</div>
     <div class="table-wrap" style="margin-top:8px">
       <table class="basic-table sci-table" id="cmp-ablation">
         <thead><tr><th>Configuration</th><th>RMSE</th><th>Δ RMSE</th><th>F1</th><th>Δ F1</th><th>R²</th><th>AUC</th></tr></thead>

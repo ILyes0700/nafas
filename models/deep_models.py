@@ -8,10 +8,9 @@ saute simplement (jamais de chiffres inventes a la place).
 
 CHANGEMENTS v4.0 (migration Open-Meteo)
 ---------------------------------------
-1. _FEATURES passe de 7 a 15 variables. Avant la migration, seules 7 colonnes
-   etaient disponibles proprement dans api_readings ; open_data en expose 15.
-   Consequence importante : le BiLSTM etait jusqu'ici compare a XGBoost alors
-   qu'il voyait DEUX FOIS MOINS d'information. La comparaison est enfin juste.
+1. Les modèles profonds partagent désormais 35 features réelles avec ML :
+   retards AQI, tendances, fuzzy, polluants, météo et variables temporelles.
+   La comparaison avec Random Forest/XGBoost utilise ainsi le même socle d'information.
 2. Hyperparametres re-cales pour ~21 000 lignes reelles par ville au lieu de
    2016 lignes tuilees : batch 64 (au lieu de 16), 64/32 unites (au lieu de
    48/24), 60 epochs (au lieu de 120), patience 8 (au lieu de 12).
@@ -26,14 +25,34 @@ CHANGEMENTS v4.0 (migration Open-Meteo)
 from __future__ import annotations
 import numpy as np
 
-SEQ = 24  # heures d'historique fournies au reseau recurrent
+try:
+    from . import fuzzy_type2
+except Exception:
+    try:
+        import fuzzy_type2
+    except Exception:
+        fuzzy_type2 = None
 
-# v4.0 : 15 variables reelles issues de open_data (etait 7).
-_FEATURES = [
+SEQ = 24        # contexte pour +1h et +6h
+SEQ_LONG = 168  # contexte hebdomadaire complet pour +24h
+
+# Les modèles DL reçoivent désormais le même socle de 35 variables que ML :
+# AQI/retards/tendances, fuzzy, polluants, météo et variables temporelles.
+RAW_FEATURES = [
     "aqi", "pm25", "pm10", "so2", "no2", "o3", "co", "dust",
     "temperature", "humidity", "wind_speed", "wind_direction",
     "pressure", "precipitation", "cloud_cover",
 ]
+FEATURE_NAMES = (
+    ["aqi"] + [f"aqi_lag_{k}" for k in (1, 2, 3, 4, 5, 6, 7, 24, 168)]
+    + ["aqi_delta_1h", "aqi_delta_6h", "aqi_mean_6h", "aqi_mean_24h", "aqi_std_24h"]
+    + ["fuzzy_score_type2", "uncertainty_lower", "uncertainty_upper"]
+    + ["pm25", "pm10", "so2", "no2", "o3", "co", "dust"]
+    + ["temperature", "humidity", "wind_speed", "wind_direction",
+       "pressure", "precipitation", "cloud_cover"]
+    + ["hour_of_day", "is_weekend", "season"]
+)
+assert len(FEATURE_NAMES) == 35
 CLASS_BINS = [0, 50, 100, 150, 10_000]
 
 # Hyperparametres re-cales pour des series longues et reelles.
@@ -51,6 +70,11 @@ def available() -> bool:
         return True
     except Exception:
         return False
+
+
+def _sequence_length(horizon_step):
+    """Contexte plus long pour l'horizon journalier."""
+    return SEQ_LONG if int(horizon_step) >= 24 else SEQ
 
 
 def _classify(vals):
@@ -90,24 +114,76 @@ def _metrics(yte, pred):
     }
 
 
-def _build_sequences(records, horizon_step):
-    """Construit (n, SEQ, n_features) et la cible AQI a t+horizon.
+def _record_value(record, key):
+    value = record.get(key)
+    try:
+        return float(value) if value is not None else 0.0
+    except (TypeError, ValueError):
+        return 0.0
 
-    v4.0 : les colonnes absentes d'un enregistrement valent 0.0, mais on ne
-    remplit plus silencieusement TOUT le vecteur : si aqi manque, la serie est
-    inexploitable et data_loader l'a deja filtree en amont.
-    """
-    cols = {k: np.array([float(r.get(k) or 0.0) for r in records]) for k in _FEATURES}
-    aqi = cols["aqi"]
+
+def _time_parts(record, index):
+    ts = record.get("ts") or record.get("timestamp")
+    try:
+        if not hasattr(ts, "hour"):
+            import pandas as pd
+            ts = pd.to_datetime(ts)
+        hour = int(ts.hour)
+        dow = int(ts.weekday())
+        month = int(ts.month)
+    except Exception:
+        hour, dow, month = index % 24, (index // 24) % 7, ((index // (24 * 90)) % 4) * 3 + 1
+    return float(hour), float(dow >= 5), float((month % 12) // 3)
+
+
+def build_feature_matrix(records):
+    """Construit les 35 features réelles partagées par les modèles ML et DL."""
+    n = len(records)
+    raw = {k: np.array([_record_value(r, k) for r in records], dtype=float) for k in RAW_FEATURES}
+    aqi = raw["aqi"]
+    rows = []
+    for i, record in enumerate(records):
+        def lag(k):
+            return float(aqi[max(0, i - k)])
+        hist6 = aqi[max(0, i - 5):i + 1]
+        hist24 = aqi[max(0, i - 23):i + 1]
+        if fuzzy_type2 is not None:
+            fz = fuzzy_type2.assess(min(100.0, aqi[i] / 5.0))
+            fuzzy_values = [fz.get("fuzzy_score_type2", 0.0), fz.get("uncertainty_lower", 0.0), fz.get("uncertainty_upper", 0.0)]
+        else:
+            fuzzy_values = [0.0, 0.0, 0.0]
+        hour, weekend, season = _time_parts(record, i)
+        rows.append([
+            aqi[i], lag(1), lag(2), lag(3), lag(4), lag(5), lag(6), lag(7), lag(24), lag(168),
+            aqi[i] - lag(1), aqi[i] - lag(6), float(np.mean(hist6)), float(np.mean(hist24)),
+            float(np.std(hist24)) if len(hist24) > 1 else 0.0,
+            *fuzzy_values,
+            *[raw[k][i] for k in ("pm25", "pm10", "so2", "no2", "o3", "co", "dust")],
+            *[raw[k][i] for k in ("temperature", "humidity", "wind_speed", "wind_direction", "pressure", "precipitation", "cloud_cover")],
+            hour, weekend, season,
+        ])
+    return np.asarray(rows, dtype=np.float32)
+
+
+def _build_sequences(records, horizon_step, matrix=None):
+    """Construit les séquences à partir des mêmes 35 features réelles que ML."""
+    if matrix is None:
+        matrix = build_feature_matrix(records)
+    aqi = matrix[:, 0]
     n = len(aqi)
+    seq = _sequence_length(horizon_step)
     X, y = [], []
-    for i in range(SEQ, n - horizon_step):
-        window = np.stack([cols[k][i - SEQ:i] for k in _FEATURES], axis=1)
-        X.append(window)
+    for i in range(seq, n - horizon_step):
+        X.append(matrix[i - seq:i])
         y.append(aqi[i + horizon_step])
     if not X:
         return None, None
-    return np.asarray(X, dtype=float), np.asarray(y, dtype=float)
+    return np.asarray(X, dtype=np.float32), np.asarray(y, dtype=np.float32)
+
+
+def prepare_sequences(records, horizon_step, matrix=None):
+    """Prépare une seule fois les fenêtres réelles d'un couple zone/horizon."""
+    return _build_sequences(records, horizon_step, matrix=matrix)
 
 
 def _standardize(Xtr, Xte):
@@ -117,57 +193,48 @@ def _standardize(Xtr, Xte):
     return (Xtr - mu) / sd, (Xte - mu) / sd
 
 
-def _cut_index(n_windows, horizon_step, first_holdout, split):
-    """Indice de coupe train/test dans l'espace des FENETRES.
+def _window_split_bounds(records, horizon_step, n_windows, first_val, first_test):
+    """Bornes des fenetres train/validation/test selon la cible future."""
+    seq = _sequence_length(horizon_step)
+    n = len(records)
+    targets = np.arange(seq, n - horizon_step, dtype=int) + horizon_step
+    targets = targets[:n_windows]
+    if first_val is None or first_val < 0:
+        first_val = int(n * 0.70)
+    if first_test is None or first_test < 0:
+        first_test = int(n * 0.80)
+    ntr = int(np.sum(targets < first_val))
+    nval = int(np.sum((targets >= first_val) & (targets < first_test)))
+    train_end = max(1, min(ntr, n_windows - 2))
+    val_end = max(train_end + 1, min(train_end + nval, n_windows - 1))
+    return train_end, val_end
 
-    first_holdout est un indice dans l'espace des LIGNES (fourni par
-    train_all.py). La fenetre j couvre les lignes [j, j+SEQ) et predit la ligne
-    j+SEQ+horizon_step ; elle appartient donc au train si sa cible est
-    anterieure au debut du hold-out. v4.0 : calcul direct, plus de boucle.
-    """
-    if first_holdout is not None and first_holdout >= 0:
-        ntr = first_holdout - SEQ - horizon_step
-        if ntr >= 5 and (n_windows - ntr) >= 5:
-            return ntr
-    return max(1, int(n_windows * split))
 
+def _make_network(layers, models, optimizers, input_shape, attention, bidirectional,
+                  architecture="rnn"):
+    inp = layers.Input(shape=input_shape)
 
-def _train(records, horizon_step, attention, bidirectional=True, split=0.8,
-           first_holdout=None):
-    """Trainer partage. Retourne un dict de metriques reelles, ou None."""
-    try:
-        import tensorflow as tf
-        from tensorflow.keras import layers, models, callbacks, optimizers
-    except Exception:
-        return None
-    X, y = _build_sequences(records, horizon_step)
-    if X is None or len(X) < 40:
-        return None
-
-    ntr = _cut_index(len(X), horizon_step, first_holdout, split)
-    if ntr >= len(X):
-        ntr = len(X) - 1
-    Xtr, Xte, ytr, yte = X[:ntr], X[ntr:], y[:ntr], y[ntr:]
-    if len(Xte) < 5:
-        return None
-
-    Xtr, Xte = _standardize(Xtr, Xte)
-    # Standardisation de la CIBLE : indispensable, l'AQI reel monte a 300+.
-    ymu = float(ytr.mean())
-    ysd = float(ytr.std()) + 1e-6
-    ytr_s = (ytr - ymu) / ysd
-    tf.random.set_seed(42)
-    np.random.seed(42)
-
-    inp = layers.Input(shape=(X.shape[1], X.shape[2]))
+    if architecture == "cnn_ae":
+        # Encodeur convolutionnel causal + reconstruction de la fenêtre.
+        # La sortie forecast est séparée de la reconstruction pour éviter toute
+        # valeur fabriquée : les deux sorties sont apprises sur les mêmes fenêtres.
+        c = layers.Conv1D(64, 5, padding="causal", activation="relu")(inp)
+        c = layers.BatchNormalization()(c)
+        c = layers.Conv1D(32, 3, padding="causal", activation="relu")(c)
+        latent = layers.Conv1D(16, 1, padding="same", activation="relu", name="cnn_latent")(c)
+        recon = layers.Conv1D(input_shape[-1], 1, padding="same", name="reconstruction")(latent)
+        pooled = layers.GlobalAveragePooling1D()(latent)
+        pooled = layers.Dense(32, activation="relu")(pooled)
+        forecast = layers.Dense(1, name="forecast")(pooled)
+        model = models.Model(inp, [forecast, recon])
+        model.compile(optimizer=optimizers.Adam(learning_rate=1e-3, clipnorm=1.0),
+                      loss=["huber", "mse"], loss_weights=[1.0, 0.1])
+        return model
 
     def rnn(units, seq):
-        # BiLSTM lit le temps dans LES DEUX SENS ; LSTM simple dans un seul.
         lyr = layers.LSTM(units, return_sequences=seq)
         return layers.Bidirectional(lyr) if bidirectional else lyr
 
-    # Front-end CNN : extraction de motifs locaux court-terme avant le BiLSTM
-    # (architecture CNN-BiLSTM-AM, etat de l'art prevision AQI 2024-2025).
     c = layers.Conv1D(32, 3, padding="causal", activation="relu")(inp)
     c = layers.BatchNormalization()(c)
     x = rnn(UNITS_1, True)(c)
@@ -183,48 +250,104 @@ def _train(records, horizon_step, attention, bidirectional=True, split=0.8,
     x = layers.Dense(32, activation="relu")(x)
     out = layers.Dense(1)(x)
     model = models.Model(inp, out)
-    opt = optimizers.Adam(learning_rate=1e-3, clipnorm=1.0)
-    model.compile(optimizer=opt, loss="huber")
-    cbs = [
-        callbacks.EarlyStopping(patience=PATIENCE, restore_best_weights=True),
-        callbacks.ReduceLROnPlateau(factor=0.5, patience=4, min_lr=1e-5),
-    ]
-    model.fit(Xtr, ytr_s, validation_split=0.15, epochs=EPOCHS,
-              batch_size=BATCH, verbose=0, callbacks=cbs)
+    model.compile(optimizer=optimizers.Adam(learning_rate=1e-3, clipnorm=1.0), loss="huber")
+    return model
 
+
+def _scale_windows(Xfit, Xother):
+    flat = Xfit.reshape(-1, Xfit.shape[-1])
+    mu = flat.mean(axis=0)
+    sd = flat.std(axis=0) + 1e-6
+    return (Xfit - mu) / sd, (Xother - mu) / sd
+
+
+def _train(records, horizon_step, attention, bidirectional=True, split=0.7,
+           first_holdout=None, first_test=None, architecture="rnn", prepared=None):
+    """Train/validation/test temporel, sans choix base sur le test."""
+    try:
+        import tensorflow as tf
+        from tensorflow.keras import layers, models, callbacks, optimizers
+    except Exception:
+        return None
+    X, y = prepared if prepared is not None else _build_sequences(records, horizon_step)
+    if X is None or len(X) < 60:
+        return None
+    ntr, nval_end = _window_split_bounds(records, horizon_step, len(X), first_holdout, first_test)
+    if ntr < 20 or nval_end - ntr < 10 or len(X) - nval_end < 10:
+        return None
+    Xtr, Xval, Xfit, Xtest = X[:ntr], X[ntr:nval_end], X[:nval_end], X[nval_end:]
+    ytr, yval, yfit, ytest = y[:ntr], y[ntr:nval_end], y[:nval_end], y[nval_end:]
+    Xtr_s, Xval_s = _scale_windows(Xtr, Xval)
+    Xfit_s, Xtest_s = _scale_windows(Xfit, Xtest)
+    ymu, ysd = float(ytr.mean()), float(ytr.std()) + 1e-6
+    ytr_s, yval_s = (ytr - ymu) / ysd, (yval - ymu) / ysd
+    tf.random.set_seed(42); np.random.seed(42)
+
+    cbs = [callbacks.EarlyStopping(patience=PATIENCE, restore_best_weights=True),
+           callbacks.ReduceLROnPlateau(factor=0.5, patience=4, min_lr=1e-5)]
+    selection_model = _make_network(layers, models, optimizers, X.shape[1:], attention, bidirectional, architecture)
+    selection_targets = [ytr_s, Xtr_s] if architecture == "cnn_ae" else ytr_s
+    selection_val_targets = [yval_s, Xval_s] if architecture == "cnn_ae" else yval_s
+    selection_model.fit(Xtr_s, selection_targets, validation_data=(Xval_s, selection_val_targets), epochs=EPOCHS,
+                        batch_size=BATCH, verbose=0, callbacks=cbs, shuffle=False)
+    selection_train_output = selection_model.predict(Xtr_s, verbose=0)
+    selection_output = selection_model.predict(Xval_s, verbose=0)
+    if architecture == "cnn_ae":
+        selection_train_output, selection_output = selection_train_output[0], selection_output[0]
+    train_pred_selection = np.asarray(selection_train_output).ravel() * ysd + ymu
+    val_pred = np.asarray(selection_output).ravel() * ysd + ymu
+    train_metrics = _metrics(ytr, train_pred_selection)
+    val_metrics = _metrics(yval, val_pred)
+
+    final_ymu, final_ysd = float(yfit.mean()), float(yfit.std()) + 1e-6
+    yfit_s = (yfit - final_ymu) / final_ysd
+    final_model = _make_network(layers, models, optimizers, X.shape[1:], attention, bidirectional, architecture)
+    final_targets = [yfit_s, Xfit_s] if architecture == "cnn_ae" else yfit_s
+    final_model.fit(Xfit_s, final_targets, validation_split=0.10, epochs=EPOCHS,
+                    batch_size=BATCH, verbose=0, callbacks=cbs, shuffle=False)
     import time
-    model.predict(Xte[:1], verbose=0)  # warm-up
+    final_model.predict(Xtest_s[:1], verbose=0)
     t0 = time.perf_counter()
-    for _r in range(5):
-        model.predict(Xte[:1], verbose=0)
+    for _r in range(5): final_model.predict(Xtest_s[:1], verbose=0)
     latency = (time.perf_counter() - t0) / 5 * 1000
-    pred_s = model.predict(Xte, verbose=0).ravel()
-    pred = pred_s * ysd + ymu  # inversion de la standardisation de la cible
-    m = _metrics(yte, pred)
-    m["latency"] = round(latency, 2)
-    return m
+    test_output = final_model.predict(Xtest_s, verbose=0)
+    if architecture == "cnn_ae":
+        test_output = test_output[0]
+    test_pred = np.asarray(test_output).ravel() * final_ysd + final_ymu
+    metrics = _metrics(ytest, test_pred)
+    for key in ("mae", "rmse", "mape", "smape", "r2", "f1", "prec", "rec", "auc", "acc"):
+        metrics[f"train_{key}"] = train_metrics.get(key)
+        metrics[f"val_{key}"] = val_metrics.get(key)
+    metrics["fit_rmse"] = round(float(np.sqrt(np.mean((yfit - final_ymu) ** 2))), 3)
+    metrics["latency"] = round(latency, 2)
+    return metrics
 
 
-def train_lstm(records, horizon_step, first_holdout=None):
-    """LSTM unidirectionnel reel. Dict de metriques, ou None si TF absent."""
+def train_lstm(records, horizon_step, first_holdout=None, first_test=None, prepared=None):
     return _train(records, horizon_step, attention=False, bidirectional=False,
-                  first_holdout=first_holdout)
+                  first_holdout=first_holdout, first_test=first_test, prepared=prepared)
 
 
-def train_bilstm(records, horizon_step, first_holdout=None):
-    """BiLSTM reel. Dict de metriques, ou None si TF absent / trop peu de data."""
+def train_bilstm(records, horizon_step, first_holdout=None, first_test=None, prepared=None):
     return _train(records, horizon_step, attention=False, bidirectional=True,
-                  first_holdout=first_holdout)
+                  first_holdout=first_holdout, first_test=first_test, prepared=prepared)
 
 
-def train_bilstm_attention(records, horizon_step, first_holdout=None):
-    """BiLSTM + Multi-Head Attention reel. Dict de metriques, ou None."""
+def train_bilstm_attention(records, horizon_step, first_holdout=None, first_test=None, prepared=None):
+    """BiLSTM + Multi-Head Attention reel avec validation/test separes."""
     return _train(records, horizon_step, attention=True,
-                  first_holdout=first_holdout)
+                  first_holdout=first_holdout, first_test=first_test, prepared=prepared)
 
 
-def attention_matrix(records, horizon_step=1):
-    """Matrice d'attention REELLE SEQ x SEQ, moyennee sur les fenetres de test.
+def train_cnn_autoencoder(records, horizon_step, first_holdout=None, first_test=None, prepared=None):
+    """CNN + Autoencoder reel, avec forecast + reconstruction de fenetre."""
+    return _train(records, horizon_step, attention=False, bidirectional=False,
+                  first_holdout=first_holdout, first_test=first_test,
+                  architecture="cnn_ae", prepared=prepared)
+
+
+def attention_matrix(records, horizon_step=1, first_val=None, first_test=None, prepared=None):
+    """Matrice d'attention reelle, de taille sequence x sequence selon l'horizon.
 
     Ce sont les VRAIS scores softmax de la couche Multi-Head Attention : il n'y
     a aucun nombre aleatoire. Si le calcul est impossible, on retourne None et
@@ -236,13 +359,13 @@ def attention_matrix(records, horizon_step=1):
     except Exception:
         return None
     try:
-        X, y = _build_sequences(records, horizon_step)
+        X, y = prepared if prepared is not None else _build_sequences(records, horizon_step)
         if X is None or len(X) < 40:
             return None
-        ntr = max(1, int(len(X) * 0.8))
-        if ntr >= len(X):
-            ntr = len(X) - 1
-        Xtr, Xte, ytr = X[:ntr], X[ntr:], y[:ntr]
+        ntr, nval_end = _window_split_bounds(records, horizon_step, len(X), first_val, first_test)
+        if nval_end >= len(X):
+            nval_end = len(X) - 1
+        Xtr, Xte, ytr = X[:nval_end], X[nval_end:], y[:nval_end]
         if len(Xte) < 5:
             return None
         Xtr, Xte = _standardize(Xtr, Xte)
@@ -269,11 +392,11 @@ def attention_matrix(records, horizon_step=1):
                   callbacks=[callbacks.EarlyStopping(patience=6,
                                                      restore_best_weights=True)])
 
-        score_model = models.Model(inp, scores)   # (n, heads, SEQ, SEQ)
+        score_model = models.Model(inp, scores)   # (n, heads, sequence, sequence)
         sc = np.asarray(score_model.predict(Xte, verbose=0), dtype=float)
         # On garde la tete la PLUS structuree (variance max) : moyenner les 4
         # tetes ensemble lisse le motif jusqu'a le rendre uniforme.
-        per_head = sc.mean(axis=0)                 # (heads, SEQ, SEQ)
+        per_head = sc.mean(axis=0)                 # (heads, sequence, sequence)
         if per_head.ndim == 3 and per_head.shape[0] > 1:
             variances = [float(per_head[h].var()) for h in range(per_head.shape[0])]
             mat = per_head[int(np.argmax(variances))]

@@ -14,29 +14,31 @@ CHANGEMENT MAJEUR v4.0 (migration donnees reelles) :
 
 Pipeline (par zone, par horizon +1h/+6h/+24h) :
   1. Charge la serie horaire REELLE depuis `open_data` via data_loader
-  2. Construit le vecteur partage de 29 features
-     (lags + fuzzy Type-2 + polluants + meteo + temporelles)
-  3. Entraine AR(7) baseline, Random Forest, XGBoost(+Optuna si dispo),
-     Gradient Boosting, MLP
-  4. Deep Learning optionnel si TensorFlow present :
-     LSTM, BiLSTM, BiLSTM+MultiHead Attention, BiLSTM+Autoencoder
+  2. Construit le vecteur partage de 35 features
+     (AQI courant + lags + tendances + fuzzy Type-2 + polluants + meteo + temporelles)
+  3. Entraine uniquement les modèles classiques autorisés : Random Forest,
+     XGBoost + Fuzzy
+  4. Deep Learning optionnel si TensorFlow present : LSTM, BiLSTM Simple,
+     BiLSTM + MultiHead Attention, BiLSTM + Autoencoder, CNN + Autoencoder
   5. Evalue MAE/RMSE/MAPE/SMAPE/R2 + F1 de classification + Wilcoxon vs baseline
   6. Sauvegarde les modeles dans models/saved/*.pkl (+ .h5)
   7. Ecrit les metriques -> model_performance, predictions -> model_predictions,
      fuzzy -> fuzzy_assessments, sante -> health_impact (si DB disponible)
 
 PROTOCOLE D'EVALUATION (strict, applique a TOUS les modeles) :
-  Split chronologique 80/20 par ville sur donnees 100% reelles.
-    - Entrainement : les 80% les plus ANCIENS
-    - Test         : les 20% les plus RECENTS, jamais vus a l'entrainement
-  Aucune donnee generee n'entre dans l'un ou l'autre ensemble. Les metriques
-  reportees sont donc directement publiables.
+  Split chronologique 70/10/20 par ville sur donnees 100% reelles.
+    - Entrainement : les 70% les plus ANCIENS
+    - Validation   : les 10% suivants, pour choisir le modele et les poids
+    - Test         : les 20% les plus RECENTS, jamais utilises pour choisir
+  Aucune donnee generee n'entre dans les partitions. Chaque modele est
+  entraine sur train, evalue sur validation, puis refit sur train+validation
+  avant une mesure finale unique sur test.
 
 Run: python -m models.train_all   (depuis la racine du projet)
   ou: cd models && python train_all.py
 """
 from __future__ import annotations
-import os, sys, json, time, math
+import os, sys, json, time, math, gc
 import datetime as dt
 import numpy as np
 
@@ -74,20 +76,24 @@ os.makedirs(SAVED, exist_ok=True)
 HORIZON_STEPS = {"1h": 1, "6h": 6, "24h": 24}
 CLASS_BINS = [0, 50, 100, 150, 10_000]  # SAFE/WARNING/CRITICAL/HAZARDOUS
 
-# Ratio du split chronologique. 0.8 = 80% train (ancien) / 20% test (recent).
-TRAIN_RATIO = 0.8
+# Ratios du split chronologique : 70% train / 10% validation / 20% test.
+TRAIN_RATIO = 0.70
+VALIDATION_RATIO = 0.10
+TEST_RATIO = 0.20
 
-# Noms des 29 features, dans l'ordre exact produit par _feature_row().
-# Sert au SHAP, au LIME et a l'ablation study : ne jamais desynchroniser.
+# Noms des 35 features, dans l'ordre exact produit par _feature_row().
+# Les cinq variables supplementaires sont calculees uniquement a partir du passe.
+# Elles donnent au modele une information de tendance utile pour +24h.
 FEATURE_NAMES = (
-    [f"aqi_lag_{k}" for k in (1, 2, 3, 4, 5, 6, 7, 24, 168)]
+    ["aqi_current"] + [f"aqi_lag_{k}" for k in (1, 2, 3, 4, 5, 6, 7, 24, 168)]
+    + ["aqi_delta_1h", "aqi_delta_6h", "aqi_mean_6h", "aqi_mean_24h", "aqi_std_24h"]
     + ["fuzzy_score_type2", "uncertainty_lower", "uncertainty_upper"]
     + ["pm25", "pm10", "so2", "no2", "o3", "co", "dust"]
     + ["temperature", "humidity", "wind_speed", "wind_direction",
        "pressure", "precipitation", "cloud_cover"]
     + ["hour_of_day", "is_weekend", "season"]
 )
-assert len(FEATURE_NAMES) == 29, "FEATURE_NAMES desynchronise avec _feature_row"
+assert len(FEATURE_NAMES) == 35, "FEATURE_NAMES desynchronise avec _feature_row"
 
 
 def to_series(frame):
@@ -96,11 +102,10 @@ def to_series(frame):
     return frame
 
 
-def _time_features(ts, i):
-    """hour-of-day, weekend flag et saison derives du VRAI timestamp.
-    Retombe sur l'index de l'enregistrement uniquement si aucun timestamp.
-    Avec open_data le timestamp est toujours present et strictement horaire,
-    donc la branche de secours ne devrait jamais servir."""
+def _time_features(ts, i, offset_hours=0):
+    """Caracteristiques calendaires du moment predit, pas seulement du moment t.
+    Pour +6h et +24h, l'heure/jour cible peut differer du timestamp d'entree.
+    Retombe sur l'index uniquement si aucun timestamp n'est disponible."""
     if isinstance(ts, str):
         for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M"):
             try:
@@ -109,39 +114,18 @@ def _time_features(ts, i):
             except Exception:
                 pass
     if isinstance(ts, dt.datetime):
-        return ts.hour, (1 if ts.weekday() >= 5 else 0), (ts.month % 12) // 3
-    return i % 24, (1 if (i // 24) % 7 >= 5 else 0), (i // (24 * 90)) % 4
+        target_ts = ts + dt.timedelta(hours=int(offset_hours))
+        return target_ts.hour, (1 if target_ts.weekday() >= 5 else 0), (target_ts.month % 12) // 3
+    target_i = i + int(offset_hours)
+    return target_i % 24, (1 if (target_i // 24) % 7 >= 5 else 0), (target_i // (24 * 90)) % 4
 
 
-def _feature_row(records, aqi, i):
-    """Vecteur de features partage pour l'index i - 29 dimensions.
+def _feature_row(records, aqi, i, horizon_step=0):
+    """Vecteur partage pour l'entrainement et la prediction du dernier point.
 
-    Reutilise pour l'entrainement ET pour la prevision du dernier point,
-    afin que les deux soient construits strictement de la meme facon.
-
-    Migration Open-Meteo (prompt section 3, point 3) :
-      SUPPRIMES : uv_index, forecast_3h, forecast_6h
-          -> ces trois colonnes venaient d'AccuWeather via api_readings et
-             n'existent pas dans open_data. Aucun equivalent direct :
-             les conserver a zero aurait ajoute trois features constantes,
-             donc du bruit inutile pour les arbres et une dilution du SHAP.
-      AJOUTES   : o3, co, dust, precipitation, cloud_cover
-          -> disponibles nativement dans open_data (CAMS + ERA5).
-             `dust` est particulierement pertinent pour Gabes : il capture
-             les episodes de poussiere saharienne, un driver majeur des pics
-             de PM10 que l'ancien vecteur ne voyait pas du tout.
-             `precipitation` et `cloud_cover` remplacent fonctionnellement
-             les anciennes previsions meteo supprimees.
-
-    Bilan : 27 - 3 + 5 = 29 features.
-
-    Decomposition :
-       9 lags AQI    : t-1..t-7, t-24, t-168
-       3 fuzzy       : fuzzy_score_type2, uncertainty_lower, uncertainty_upper
-       7 polluants   : pm25, pm10, so2, no2, o3, co, dust
-       7 meteo       : temperature, humidity, wind_speed, wind_direction,
-                       pressure, precipitation, cloud_cover
-       3 temporelles : hour_of_day, is_weekend, season
+    Les cinq variables de tendance sont calculees uniquement avec l'historique
+    disponible avant i. Elles n'introduisent donc aucune fuite de la cible.
+    Les caracteristiques calendaires sont alignees sur l'heure cible i+h.
     """
     def lag(k):
         j = i - k
@@ -149,7 +133,7 @@ def _feature_row(records, aqi, i):
 
     fz = fuzzy_type2.assess(min(100.0, aqi[i] / 5.0))
     r = records[i]
-    hod, is_wend, season = _time_features(r.get("ts") or r.get("timestamp"), i)
+    hod, is_wend, season = _time_features(r.get("ts") or r.get("timestamp"), i, horizon_step)
 
     def g(key):
         """Lecture defensive : open_data peut contenir des NULL residuels sur
@@ -157,9 +141,19 @@ def _feature_row(records, aqi, i):
         v = r.get(key)
         return float(v) if v is not None else 0.0
 
+    hist6 = aqi[max(0, i - 5):i + 1]
+    hist24 = aqi[max(0, i - 23):i + 1]
+    delta1 = aqi[i] - lag(1)
+    delta6 = aqi[i] - lag(6)
+    mean6 = float(np.mean(hist6)) if hist6 else aqi[i]
+    mean24 = float(np.mean(hist24)) if hist24 else aqi[i]
+    std24 = float(np.std(hist24)) if len(hist24) > 1 else 0.0
+
     return [
+        aqi[i],
         lag(1), lag(2), lag(3), lag(4), lag(5), lag(6), lag(7),
         lag(24), lag(168),
+        delta1, delta6, mean6, mean24, std24,
         fz["fuzzy_score_type2"], fz["uncertainty_lower"], fz["uncertainty_upper"],
         g("pm25"), g("pm10"), g("so2"), g("no2"), g("o3"), g("co"), g("dust"),
         g("temperature"), g("humidity"), g("wind_speed"), g("wind_direction"),
@@ -180,55 +174,137 @@ def build_xy(records, horizon_step):
     start = 8 if n < 176 else 168
     X, y = [], []
     for i in range(start, n - horizon_step):
-        X.append(_feature_row(records, aqi, i))
+        X.append(_feature_row(records, aqi, i, horizon_step))
         y.append(aqi[i + horizon_step])
     return np.array(X, dtype=float), np.array(y, dtype=float)
 
 
-def _split_index_records(records, train_ratio=TRAIN_RATIO):
-    """Indice du PREMIER enregistrement de test dans la liste `records`.
-
-    Remplace l'ancien _first_holdout_index() qui cherchait le marqueur
-    `_holdout` pose par le densificateur. open_data ne contenant que du reel,
-    la frontiere est simplement chronologique : les 80% les plus anciens
-    servent a l'entrainement, les 20% les plus recents au test.
-
-    Cet indice est passe tel quel a ar7_predict() et aux modeles deep, qui
-    gardent donc exactement la meme signature qu'avant.
-    """
+def _split_bounds_records(records, train_ratio=TRAIN_RATIO,
+                         validation_ratio=VALIDATION_RATIO):
+    """Retourne les frontieres de lignes train/validation/test."""
     n = len(records)
     if n < 3:
-        return -1
-    cut = int(n * train_ratio)
-    return max(1, min(cut, n - 1))
+        return -1, -1
+    train_end = int(n * train_ratio)
+    # Additionner les tailles train et validation évite l'arrondi binaire de
+    # 0.70 + 0.10 (qui peut devenir 0.799999...) et garantit le protocole 70/10/20.
+    validation_end = train_end + int(n * validation_ratio)
+    train_end = max(1, min(train_end, n - 2))
+    validation_end = max(train_end + 1, min(validation_end, n - 1))
+    return train_end, validation_end
 
 
-def _split_index(records, horizon_step, n_samples, train_ratio=TRAIN_RATIO):
-    """Nombre d'echantillons d'ENTRAINEMENT dans la sortie de build_xy.
+def _split_index_records(records, train_ratio=TRAIN_RATIO):
+    """Compatibilite : retourne la premiere ligne de validation."""
+    train_end, _ = _split_bounds_records(records, train_ratio)
+    return train_end
 
-    Un echantillon appartient au train si sa CIBLE (index i + horizon_step)
-    tombe avant la frontiere chronologique. C'est ce qui garantit l'absence
-    de fuite : aucune cible du train ne provient de la periode de test.
+
+def _aqi_distribution(records, start, end):
+    values = np.asarray([float(r["aqi"]) for r in records[start:end]], dtype=float)
+    if values.size == 0:
+        return {"rows": 0, "mean": None, "median": None, "std": None, "class_pct": {}}
+    counts = np.histogram(values, bins=[-np.inf, 50, 100, 150, np.inf])[0]
+    return {
+        "rows": int(values.size),
+        "mean": round(float(values.mean()), 3),
+        "median": round(float(np.median(values)), 3),
+        "std": round(float(values.std()), 3),
+        "min": round(float(values.min()), 3),
+        "max": round(float(values.max()), 3),
+        "class_pct": {
+            "0-50": round(float(counts[0] / values.size * 100), 3),
+            "50-100": round(float(counts[1] / values.size * 100), 3),
+            "100-150": round(float(counts[2] / values.size * 100), 3),
+            "150+": round(float(counts[3] / values.size * 100), 3),
+        },
+    }
+
+
+def save_spatial_overlap_summary(frames):
+    """Audit réel des séries AQI بين المناطق بدون تعديل أو توليد بيانات."""
+    zone_values = {str(zid): np.asarray([float(r["aqi"]) for r in to_series(frame)], dtype=float)
+                   for zid, frame in frames.items()}
+    report = {"zones": {}, "warnings": []}
+    ids = sorted(zone_values)
+    for i, left in enumerate(ids):
+        for right in ids[i + 1:]:
+            n = min(len(zone_values[left]), len(zone_values[right]))
+            if n == 0:
+                continue
+            equal_pct = float(np.isclose(zone_values[left][:n], zone_values[right][:n], atol=1e-9, rtol=0).mean() * 100)
+            row = {"zone_a": left, "zone_b": right, "rows_compared": n,
+                   "aqi_exact_equal_pct": round(equal_pct, 3)}
+            report["zones"][f"{left}-{right}"] = row
+            if equal_pct > 99.9:
+                warning = f"AQI des zones {left} et {right} identique à {equal_pct:.3f}% ; vérifier la source spatiale réelle."
+                report["warnings"].append(warning)
+                print("[spatial-warning] " + warning)
+    with open(os.path.join(SAVED, "spatial_overlap_summary.json"), "w", encoding="utf-8") as fh:
+        json.dump(report, fh, indent=2, ensure_ascii=False)
+    return report
+
+
+def save_data_drift_summary(frames):
+    """Persiste un audit descriptif réel ; il ne participe jamais à la sélection."""
+    report = {"protocol": "70/10/20 chronological", "zones": {}}
+    for zid, frame in frames.items():
+        records = to_series(frame)
+        first_val, first_test = _split_bounds_records(records)
+        train = _aqi_distribution(records, 0, first_val)
+        validation = _aqi_distribution(records, first_val, first_test)
+        test = _aqi_distribution(records, first_test, len(records))
+        report["zones"][str(zid)] = {
+            "train": train, "validation": validation, "test": test,
+            "validation_to_test_mean_delta": round(float(test["mean"] - validation["mean"]), 3),
+            "validation_to_test_std_delta": round(float(test["std"] - validation["std"]), 3),
+        }
+    path = os.path.join(SAVED, "data_drift_summary.json")
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(report, fh, indent=2, ensure_ascii=False)
+    print(f"[drift] real AQI distribution saved to {path}")
+    return report
+
+
+def _split_sample_bounds(records, horizon_step, n_samples,
+                         train_ratio=TRAIN_RATIO,
+                         validation_ratio=VALIDATION_RATIO):
+    """Retourne les bornes d'echantillons train/validation/test.
+
+    La partition est basee sur l'index de la CIBLE, pas sur le debut de la
+    fenetre. Ainsi une cible t+h ne peut pas entrer dans train si elle tombe
+    apres la frontiere train, et le test n'est jamais utilise pour selectionner
+    le modele.
     """
     n = len(records)
     start = 8 if n < 176 else 168
-    fho = _split_index_records(records, train_ratio)
-    if fho < 0:
-        return max(1, int(n_samples * train_ratio))
-    ntr = 0
-    for i in range(n_samples):
-        if start + i + horizon_step < fho:
-            ntr += 1
-        else:
-            break
-    return max(1, min(ntr, n_samples - 1))
+    train_end, validation_end = _split_bounds_records(
+        records, train_ratio, validation_ratio)
+    if train_end < 0:
+        a = max(1, int(n_samples * train_ratio))
+        b = max(a + 1, int(n_samples * (train_ratio + validation_ratio)))
+        return a, min(b, n_samples - 1), n_samples
+    targets = np.arange(start, n - horizon_step, dtype=int) + horizon_step
+    if len(targets) != n_samples:
+        targets = targets[:n_samples]
+    ntr = int(np.sum(targets < train_end))
+    nval = int(np.sum((targets >= train_end) & (targets < validation_end)))
+    ntr = max(1, min(ntr, n_samples - 2))
+    nval_end = max(ntr + 1, min(ntr + nval, n_samples - 1))
+    return ntr, nval_end, n_samples
 
 
-def latest_feature(records):
-    """Ligne de features du point reel le plus recent -> vraie prevision +h
-    pour l'interface."""
+def _split_index(records, horizon_step, n_samples, train_ratio=TRAIN_RATIO):
+    """Compatibilite : nombre d'echantillons d'entrainement."""
+    return _split_sample_bounds(records, horizon_step, n_samples,
+                                train_ratio, VALIDATION_RATIO)[0]
+
+
+def latest_feature(records, horizon_step=0):
+    """Ligne de features du point reel le plus recent -> vraie prevision +h.
+    Les caracteristiques calendaires sont alignees sur l'horizon cible."""
     aqi = [float(r["aqi"]) for r in records]
-    return np.array([_feature_row(records, aqi, len(aqi) - 1)], dtype=float)
+    return np.array([_feature_row(records, aqi, len(aqi) - 1, horizon_step)], dtype=float)
 
 
 def classify(vals):
@@ -237,8 +313,8 @@ def classify(vals):
 
 def ar7_predict(records, horizon_step, first_ho):
     """Baseline AR(7) par moindres carres sur la tranche d'entrainement.
-    La frontiere train/test suit le MEME split chronologique que les autres
-    modeles ; passer first_ho < 0 retombe sur un 80/20 temporel."""
+    Cette fonction legacy reste disponible pour les scripts d'ablation ; le
+    pipeline principal utilise ar7_predict_range avec le split 70/10/20."""
     aqi = np.array([float(r["aqi"]) for r in records])
     rows = []
     tgt_idx = []
@@ -259,6 +335,59 @@ def ar7_predict(records, horizon_step, first_ho):
     coef, *_ = np.linalg.lstsq(A, ya[:ntr], rcond=None)
     Xte = np.column_stack([Xa[ntr:], np.ones(len(Xa) - ntr)])
     return ya[ntr:], Xte @ coef
+
+
+
+def ar7_predict_range(records, horizon_step, target_start, target_end, fit_end):
+    """Baseline AR(7) ajuste avant fit_end et evalue sur [target_start,target_end)."""
+    aqi = np.array([float(r["aqi"]) for r in records], dtype=float)
+    Xrows, yrows, targets = [], [], []
+    for i in range(7, len(aqi) - horizon_step):
+        Xrows.append(aqi[i-7:i][::-1])
+        yrows.append(aqi[i + horizon_step])
+        targets.append(i + horizon_step)
+    if not Xrows:
+        return np.array([]), np.array([])
+    Xrows = np.asarray(Xrows, dtype=float)
+    yrows = np.asarray(yrows, dtype=float)
+    targets = np.asarray(targets, dtype=int)
+    fit_mask = targets < int(fit_end)
+    eval_mask = (targets >= int(target_start)) & (targets < int(target_end))
+    if fit_mask.sum() < 20 or eval_mask.sum() == 0:
+        return np.array([]), np.array([])
+    A = np.column_stack([Xrows[fit_mask], np.ones(int(fit_mask.sum()))])
+    coef, *_ = np.linalg.lstsq(A, yrows[fit_mask], rcond=None)
+    Ae = np.column_stack([Xrows[eval_mask], np.ones(int(eval_mask.sum()))])
+    return yrows[eval_mask], Ae @ coef
+
+def clear_stale_model_outputs(conn):
+    """يمسح مخرجات النماذج القديمة قبل run جديد، دون لمس الأوزان أو البيانات."""
+    if conn is None:
+        return
+    tables = (
+        "model_performance", "model_training_performance", "model_validation_performance",
+        "model_predictions", "forecast_metrics", "forecast_predictions", "dl_artifacts",
+        "model_hyperparameters", "xai_artifacts",
+    )
+    cur = conn.cursor()
+    for table in tables:
+        try:
+            cur.execute(f"DELETE FROM `{table}`")
+        except Exception as exc:
+            print(f"[cleanup] {table} skipped: {exc}")
+    conn.commit()
+    cur.close()
+    print("[cleanup] stale model outputs cleared; ensemble_weights/open_data untouched")
+
+
+def release_dl_memory():
+    """Libère les graphes TensorFlow après un modèle, sans modifier ses métriques."""
+    try:
+        import tensorflow as tf
+        tf.keras.backend.clear_session()
+    except Exception:
+        pass
+    gc.collect()
 
 
 def save_metrics_db(conn, rows):
@@ -303,6 +432,83 @@ def _extract_hparams(model):
         if short in keep and v is not None and short not in out:
             out[short] = str(v)
     return out
+
+
+
+def save_validation_metrics_db(conn, rows):
+    """Persiste les metriques de validation dans une table separee.
+
+    model_performance reste reserve aux resultats du test final. Cette table
+    permet au dashboard ou a un audit de verifier la vraie regle de selection.
+    """
+    if conn is None:
+        return
+    try:
+        cur = conn.cursor()
+        cur.execute("""CREATE TABLE IF NOT EXISTS model_validation_performance (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            model_name VARCHAR(100), city_id VARCHAR(50), evaluated_at DATETIME,
+            horizon VARCHAR(10), accuracy FLOAT, precision_macro FLOAT,
+            recall_macro FLOAT, f1_macro FLOAT, mae FLOAT, rmse FLOAT,
+            mape FLOAT, smape FLOAT, r_squared FLOAT, auc_roc FLOAT,
+            avg_latency_ms FLOAT, improvement_vs_baseline FLOAT,
+            INDEX(model_name, city_id, horizon)
+        ) ENGINE=InnoDB""")
+        if rows:
+            cur.execute("DELETE FROM model_validation_performance")
+        for m in rows:
+            cur.execute(
+                """INSERT INTO model_validation_performance
+                   (model_name, city_id, evaluated_at, horizon, accuracy,
+                    precision_macro, recall_macro, f1_macro, mae, rmse, mape,
+                    smape, r_squared, auc_roc, avg_latency_ms,
+                    improvement_vs_baseline)
+                   VALUES (%s,%s,NOW(),%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                (m["model"], str(m["city_id"]), m["horizon"], m.get("acc"),
+                 m.get("prec"), m.get("rec"), m.get("f1"), m.get("mae"),
+                 m.get("rmse"), m.get("mape"), m.get("smape"), m.get("r2"),
+                 m.get("auc"), m.get("latency", 0), m.get("improvement")))
+        conn.commit()
+        cur.close()
+        print(f"[validation] stored {len(rows)} validation rows")
+    except Exception as exc:
+        print("[validation] save skipped:", exc)
+
+
+def save_training_metrics_db(conn, rows):
+    """Persiste les metriques de la partition TRAIN dans une table separee."""
+    if conn is None:
+        return
+    try:
+        cur = conn.cursor()
+        cur.execute("""CREATE TABLE IF NOT EXISTS model_training_performance (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            model_name VARCHAR(100), city_id VARCHAR(50), evaluated_at DATETIME,
+            horizon VARCHAR(10), accuracy FLOAT, precision_macro FLOAT,
+            recall_macro FLOAT, f1_macro FLOAT, mae FLOAT, rmse FLOAT,
+            mape FLOAT, smape FLOAT, r_squared FLOAT, auc_roc FLOAT,
+            avg_latency_ms FLOAT, improvement_vs_baseline FLOAT,
+            INDEX(model_name, city_id, horizon)
+        ) ENGINE=InnoDB""")
+        if rows:
+            cur.execute("DELETE FROM model_training_performance")
+        for m in rows:
+            cur.execute(
+                """INSERT INTO model_training_performance
+                   (model_name, city_id, evaluated_at, horizon, accuracy,
+                    precision_macro, recall_macro, f1_macro, mae, rmse, mape,
+                    smape, r_squared, auc_roc, avg_latency_ms,
+                    improvement_vs_baseline)
+                   VALUES (%s,%s,NOW(),%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                (m["model"], str(m["city_id"]), m["horizon"], m.get("acc"),
+                 m.get("prec"), m.get("rec"), m.get("f1"), m.get("mae"),
+                 m.get("rmse"), m.get("mape"), m.get("smape"), m.get("r2"),
+                 m.get("auc"), m.get("latency", 0), m.get("improvement")))
+        conn.commit()
+        cur.close()
+        print(f"[training] stored {len(rows)} training rows")
+    except Exception as exc:
+        print("[training] save skipped:", exc)
 
 
 def save_hyperparams_db(conn, hp):
@@ -554,16 +760,22 @@ def save_pollutant_xai(conn):
 
 def main():
     print("=" * 60)
-    print("GABES-TATENAFAS v4.0 - training on REAL Open-Meteo data")
+    print("GABES-TATENAFAS v4.1 - training on REAL Open-Meteo data")
     print("Source: table open_data | 7 villes | horaire | 2024-01-01 -> 2026-07-02")
-    print("Split : 80% ancien (train) / 20% recent (test), 0 donnee synthetique")
+    print("Split chronologique : 70% train / 10% validation / 20% test")
+    print("Selection uniquement sur validation ; test final jamais utilise pour choisir")
     print("=" * 60)
     frames = data_loader.build_frames()
+    save_spatial_overlap_summary(frames)
+    save_data_drift_summary(frames)
     conn = db_config.try_connection()
+    clear_stale_model_outputs(conn)
     all_metrics = []
+    validation_metrics = []
+    training_metrics = []
     pred_rows = []
     hyperparams = {}
-    dl_forecasts, dl_series, attn_records = {}, None, None
+    dl_forecasts, dl_series, attn_records, attn_bounds = {}, None, None, None
     zones_meta = {}
     if conn is not None:
         try:
@@ -571,213 +783,257 @@ def main():
         except Exception:
             zones_meta = {}
 
+    factories = [
+        ("Random Forest", lambda X, y: ml_models.train_random_forest(X, y)),
+        ("XGBoost + Fuzzy", lambda X, y: _make_xgb(X, y)),
+    ]
+
     for zid, frame in frames.items():
         records = to_series(frame)
-        if len(records) < 40:
-            print(f"zone {zid}: only {len(records)} rows (need >=40), skipping")
+        if len(records) < 200:
+            print(f"zone {zid}: only {len(records)} rows (need >=200), skipping")
             continue
 
-        # Frontiere chronologique unique, partagee par TOUS les modeles.
-        first_ho = _split_index_records(records)
+        first_val, first_test = _split_bounds_records(records)
         _t0 = records[0].get("ts") or records[0].get("timestamp")
-        _tc = records[first_ho].get("ts") or records[first_ho].get("timestamp")
+        _tv = records[first_val].get("ts") or records[first_val].get("timestamp")
+        _tt = records[first_test].get("ts") or records[first_test].get("timestamp")
         _tn = records[-1].get("ts") or records[-1].get("timestamp")
         zname = zones_meta.get(zid, {}).get("name", f"Zone {zid}")
         print(f"zone {zid} ({zname}): {len(records)} lignes REELLES -> training")
-        print(f"  split chronologique | train={first_ho} lignes [{_t0} -> {_tc}]"
-              f" | test={len(records) - first_ho} lignes [{_tc} -> {_tn}]"
-              f" | 0 ligne synthetique")
+        print(f"  split chronologique | train={first_val} [{_t0} -> {records[first_val-1].get('ts')}]"
+              f" | validation={first_test-first_val} [{_tv} -> {records[first_test-1].get('ts')}]"
+              f" | test={len(records)-first_test} [{_tt} -> {_tn}] | 0 ligne synthetique")
 
         if attn_records is None or len(records) > len(attn_records):
             attn_records = records
+            attn_bounds = (first_val, first_test)
 
         for h, step in HORIZON_STEPS.items():
             X, y = build_xy(records, step)
-            if len(X) < 25:
+            dl_matrix, dl_prepared = None, None
+            if deep_models is not None and deep_models.available():
+                try:
+                    dl_matrix = deep_models.build_feature_matrix(records)
+                    dl_prepared = deep_models.prepare_sequences(records, step, matrix=dl_matrix)
+                    print(f"  {h}: DL cache prepared once shape={None if dl_prepared[0] is None else dl_prepared[0].shape}")
+                except Exception as exc:
+                    print(f"  {h}: DL cache skipped: {exc}")
+            if len(X) < 60:
                 print(f"  {h}: only {len(X)} samples, skipping horizon")
                 continue
-            ntr = _split_index(records, step, len(X))
-            if ntr < 5 or (len(X) - ntr) < 5:  # pas assez d'un cote -> 80/20 brut
-                ntr = max(1, int(len(X) * TRAIN_RATIO))
-            Xtr, Xte, ytr, yte = X[:ntr], X[ntr:], y[:ntr], y[ntr:]
+            ntr, nval_end, nall = _split_sample_bounds(records, step, len(X))
+            if ntr < 20 or (nval_end - ntr) < 20 or (nall - nval_end) < 20:
+                print(f"  {h}: partitions insuffisantes train={ntr} val={nval_end-ntr} test={nall-nval_end}")
+                continue
+            Xtr, Xval = X[:ntr], X[ntr:nval_end]
+            Xtv, Xtest = X[:nval_end], X[nval_end:]
+            ytr, yval = y[:ntr], y[ntr:nval_end]
+            ytv, ytest = y[:nval_end], y[nval_end:]
 
-            # --- baseline AR(7) ---
-            yte_ar, pred_ar = ar7_predict(records, step, first_ho)
-            base_rmse = float(np.sqrt(np.mean((yte_ar - pred_ar) ** 2))) if len(pred_ar) else None
+            # Reference autoregressive, fit train puis refit train+validation.
+            yval_ar, predval_ar = ar7_predict_range(records, step, first_val, first_test, first_val)
+            ytest_ar, predtest_ar = ar7_predict_range(records, step, first_test, len(records), first_test)
+            val_ar_rmse = float(np.sqrt(np.mean((yval_ar - predval_ar) ** 2))) if len(predval_ar) else None
+            test_ar_rmse = float(np.sqrt(np.mean((ytest_ar - predtest_ar) ** 2))) if len(predtest_ar) else None
 
-            # --- train every base regressor (all REAL, sklearn/xgboost) ---
-            base_te, base_tr, base_rmses, base_models, base_lat = {}, {}, {}, {}, {}
-            for name, model in (("Random Forest", ml_models.train_random_forest(Xtr, ytr)),
-                                ("XGBoost + Fuzzy", _make_xgb(Xtr, ytr)),
-                                ("Gradient Boosting", _make_gbr(Xtr, ytr)),
-                                ("Neural Net (MLP)", _make_mlp(Xtr, ytr))):
-                pred = model.predict(Xte)
-                latency = _measure_latency(model, Xte)
-                mt = ml_models.metrics(yte, pred)
-                f1 = _f1(yte, pred)
-                wil = None
+            # Tous les modeles sont d'abord entraines sur train et evalues sur validation.
+            # Les lignes TRAIN sont aussi conservees pour diagnostiquer le surapprentissage.
+            train_preds, val_preds, val_models = {}, {}, {}
+            val_rmses = {}
+            for name, factory in factories:
                 try:
-                    if base_rmse is not None:
-                        mm = min(len(pred), len(pred_ar))
-                        wil = statistical_tests.wilcoxon_vs(np.abs(yte[:mm]-pred[:mm]),
-                                                            np.abs(yte_ar[:mm]-pred_ar[:mm]))["p_value"]
-                except Exception:
-                    pass
-                improvement = None
-                if base_rmse:
-                    improvement = round((base_rmse - mt["rmse"]) / base_rmse * 100, 1)
-                _p, _r = _prec_rec(yte, pred)
-                all_metrics.append({"model": name, "city_id": zid, "horizon": h, "f1": round(f1, 3),
-                                    "prec": round(_p, 3), "rec": round(_r, 3), "auc": _auc(yte, pred),
-                                    "acc": round(_acc(yte, pred) * 100, 1), "latency": round(latency, 2),
-                                    "improvement": improvement, "wilcoxon": wil,
-                                    **{k: round(v, 3) for k, v in mt.items()}})
-                _save_model(model, name, zid, h)
-                base_te[name] = pred
+                    model = factory(Xtr, ytr)
+                    ptrain = np.asarray(model.predict(Xtr), dtype=float)
+                    pval = np.asarray(model.predict(Xval), dtype=float)
+                    train_preds[name] = ptrain
+                    val_models[name] = model
+                    val_preds[name] = pval
+                    trow = _metric_row(name, zid, h, ytr, ptrain, None, latency=_measure_latency(model, Xtr))
+                    trow["split"] = "train"
+                    training_metrics.append(trow)
+                    val_rmses[name] = float(np.sqrt(np.mean((yval - pval) ** 2)))
+                    vrow = _metric_row(name, zid, h, yval, pval, val_ar_rmse, latency=_measure_latency(model, Xval))
+                    vrow["split"] = "validation"
+                    validation_metrics.append(vrow)
+                    print(f"zone {zid} {h} {name}: validation RMSE={vrow['rmse']:.2f} R2={vrow['r2']:.3f} F1={vrow['f1']:.3f}")
+                except Exception as exc:
+                    print(f"  {name} validation skipped: {exc}")
+
+            if not val_preds:
+                print(f"  {h}: aucun modele classique disponible")
+                continue
+
+            # Les poids de l'ensemble sont appris sur validation uniquement.
+            weights = {name: 1.0 / (val_rmses[name] + 1e-6) for name in val_preds}
+            weight_sum = sum(weights.values()) or 1.0
+            val_ensemble = sum(weights[name] / weight_sum * val_preds[name] for name in val_preds)
+            val_ensemble_rmse = float(np.sqrt(np.mean((yval - val_ensemble) ** 2)))
+            # L'ensemble reste calculable en interne, mais n'est pas un modèle
+            # affiché : le classement porte uniquement sur la liste autorisée.
+            selected_name = min(val_rmses, key=val_rmses.get)
+            selection_rmses = dict(val_rmses)
+            print(f"zone {zid} {h} selected by VALIDATION: {selected_name} validation RMSE={selection_rmses[selected_name]:.2f}")
+
+            # Refit de chaque modele sur train+validation ; test final indépendant.
+            final_models, final_preds, final_lat = {}, {}, {}
+            Xfit, yfit = Xtv, ytv
+            for name, factory in factories:
                 try:
-                    _yt = list(yte)
-                    for _i in range(min(len(pred), len(_yt))):
-                        pred_rows.append((str(zid), h, name, float(pred[_i]), float(_yt[_i])))
-                except Exception:
-                    pass
-                base_rmses[name] = mt["rmse"]
-                base_models[name] = model
-                base_lat[name] = latency
-                if name not in hyperparams:
-                    hyperparams[name] = _extract_hparams(model)
-                try:
-                    base_tr[name] = model.predict(Xtr)
-                except Exception:
-                    base_tr[name] = None
-                print(f"zone {zid} {h} {name}: RMSE={mt['rmse']:.2f} R2={mt['r2']:.3f} F1={f1:.3f}")
+                    model = factory(Xfit, yfit)
+                    ptest = np.asarray(model.predict(Xtest), dtype=float)
+                    final_models[name] = model
+                    final_preds[name] = ptest
+                    final_lat[name] = _measure_latency(model, Xtest)
+                    _save_model(model, name, zid, h)
+                    hyperparams.setdefault(name, _extract_hparams(model))
+                    test_row = _metric_row(name, zid, h, ytest, ptest, test_ar_rmse, latency=final_lat[name])
+                    test_row["selection_rule"] = "all_models_tested; deployment_selected_on_validation"
+                    all_metrics.append(test_row)
+                    for pred_value, actual_value in zip(ptest.tolist(), ytest.tolist()):
+                        pred_rows.append((str(zid), h, name, float(pred_value), float(actual_value)))
+                    print(f"zone {zid} {h} {name}: TEST RMSE={test_row['rmse']:.2f} R2={test_row['r2']:.3f} F1={test_row['f1']:.3f}")
+                except Exception as exc:
+                    print(f"  {name} final test skipped: {exc}")
 
-            # --- Ensemble Dynamic : weighted average, weight proportional to 1/RMSE ---
-            w = {n: 1.0 / (base_rmses[n] + 1e-6) for n in base_te}
-            wsum = sum(w.values()) or 1.0
-            ens_te = sum(w[n] / wsum * base_te[n] for n in base_te)
-            ens_latency = round(sum(base_lat.values()), 3)
-            all_metrics.append(_metric_row("Ensemble Dynamic", zid, h, yte, ens_te, base_rmse, latency=ens_latency))
-            print(f"zone {zid} {h} Ensemble Dynamic: RMSE={float(np.sqrt(np.mean((yte-ens_te)**2))):.2f}")
+            if not final_preds:
+                continue
+            available_weights = {name: weights[name] for name in final_preds if name in weights}
+            available_weight_sum = sum(available_weights.values()) or 1.0
+            test_ensemble = sum(available_weights[name] / available_weight_sum * final_preds[name]
+                                for name in final_preds if name in available_weights)
+            ensemble_latency = round(sum(final_lat.values()), 3)
+            # Les poids et l'ensemble restent calcules en interne pour préserver
+            # le comportement existant, mais ils ne sont pas exportes comme modèles.
+            print(f"zone {zid} {h}: ensemble interne calcule, classement limite aux modeles autorises")
 
-            # --- FULL SYSTEM : ensemble + residual correction (real) ---
-            full_te = ens_te
-            full_latency = ens_latency
-            if all(base_tr[n] is not None for n in base_tr):
-                ens_tr = sum(w[n] / wsum * base_tr[n] for n in base_tr)
-                try:
-                    res_model = _make_xgb(Xtr, ytr - ens_tr)
-                    full_te = ens_te + res_model.predict(Xte)
-                    full_latency = round(ens_latency + _measure_latency(res_model, Xte), 3)
-                except Exception:
-                    full_te = ens_te
-            full_row = _metric_row("FULL SYSTEM", zid, h, yte, full_te, base_rmse, latency=full_latency)
-            try:
-                _yt2 = list(yte)
-                for _i in range(min(len(full_te), len(_yt2))):
-                    pred_rows.append((str(zid), h, "FULL SYSTEM", float(full_te[_i]), float(_yt2[_i])))
-            except Exception:
-                pass
-            all_metrics.append(full_row)
-            print(f"zone {zid} {h} FULL SYSTEM: RMSE={float(np.sqrt(np.mean((yte-full_te)**2))):.2f}")
+            # Le modele affiche est celui choisi sur validation ; son test est seulement reporte.
+            latest_preds = {name: float(model.predict(latest_feature(records, step))[0])
+                            for name, model in final_models.items()}
+            latest_available = {name: weights[name] for name in final_models if name in weights}
+            latest_weight_sum = sum(latest_available.values()) or 1.0
+            latest_ensemble = float(sum(latest_available[name] / latest_weight_sum * latest_preds[name]
+                                        for name in final_models if name in latest_available))
+            # L'ensemble reste un fallback interne calculé avec les poids de validation.
+            # Il n'est pas exporté comme modèle affiché ni persisté dans model_predictions.
+            latest_value = latest_preds.get(selected_name, latest_ensemble)
+            level = "safe" if latest_value <= 50 else ("warning" if latest_value <= 100 else "critical")
+            selected_test_rmse = (float(np.sqrt(np.mean((ytest - final_preds[selected_name]) ** 2)))
+                                  if selected_name in final_preds else float(np.sqrt(np.mean((ytest - test_ensemble) ** 2))))
+            dl_forecasts.setdefault(zid, {})[h] = {
+                "predicted": int(round(latest_value)), "level": level,
+                "conf": round(float(max(0.0, min(1.0, 1.0 - selection_rmses[selected_name] / (np.std(yval) + 1e-6)))), 2),
+                "model": selected_name, "validation_rmse": round(selection_rmses[selected_name], 3),
+                "test_rmse": round(selected_test_rmse, 3),
+            }
+            print(f"zone {zid} {h} deployment={selected_name} (selection validation only) | test RMSE={selected_test_rmse:.2f}")
 
-            # --- REAL artifacts for the Deep Learning page (no demo) ---
-            try:
-                lf = latest_feature(records)
-                ens_latest = float(sum(w[nm] / wsum * float(base_models[nm].predict(lf)[0])
-                                       for nm in base_models))
-                lvl = "safe" if ens_latest <= 50 else ("warning" if ens_latest <= 100 else "critical")
-                dl_forecasts.setdefault(zid, {})[h] = {
-                    "predicted": int(round(ens_latest)), "level": lvl,
-                    "conf": round(float(full_row.get("acc", 0)) / 100.0, 2),
-                }
-            except Exception as e:
-                print("  latest forecast skipped:", e)
-
-            # Courbe prediction vs reel : on garde la zone avec le PLUS de points
-            # de test et le MEILLEUR modele (FULL SYSTEM). Aucune valeur inventee.
-            if h == "1h" and len(full_te) >= 4:
-                kk = min(72, len(full_te))
-                cand = {
-                    "labels": [f"H{i}" for i in range(kk)],
-                    "actual": [round(float(v), 1) for v in list(yte)[-kk:]],
-                    "predicted": [round(float(v), 1) for v in list(full_te)[-kk:]],
-                    "zone": zid,
-                    "model": "FULL SYSTEM",
-                    "rmse": round(float(np.sqrt(np.mean((yte - full_te) ** 2))), 2),
-                }
+            if h == "1h" and len(ytest) >= 4:
+                selected_test = final_preds[selected_name] if selected_name in final_preds else test_ensemble
+                kk = min(72, len(selected_test))
+                cand = {"labels": [f"H{i}" for i in range(kk)],
+                        "actual": [round(float(v), 1) for v in ytest[-kk:]],
+                        "predicted": [round(float(v), 1) for v in selected_test[-kk:]],
+                        "zone": zid, "model": selected_name,
+                        "rmse": round(selected_test_rmse, 2)}
                 if dl_series is None or len(cand["actual"]) > len(dl_series.get("actual", [])):
                     dl_series = cand
 
-            # --- Optional REAL BiLSTM / BiLSTM+Attention (only if TensorFlow) ---
+            # Deep models utilisent les memes frontieres 70/10/20 et evaluent validation/test.
             if deep_models is not None and deep_models.available():
                 for dl_name, dl_fn in (("LSTM", deep_models.train_lstm),
                                        ("BiLSTM Simple", deep_models.train_bilstm),
-                                       ("BiLSTM+MultiHead Attn", deep_models.train_bilstm_attention)):
+                                       ("BiLSTM+MultiHead Attn", deep_models.train_bilstm_attention),
+                                       ("CNN+AE", deep_models.train_cnn_autoencoder)):
                     try:
-                        dm = dl_fn(records, step, first_ho)
-                    except Exception as e:
-                        dm = None; print(f"  {dl_name} skipped: {e}")
+                        dm = dl_fn(records, step, first_val, first_test, prepared=dl_prepared)
+                    except Exception as exc:
+                        dm = None
+                        print(f"  {dl_name} skipped: {exc}")
+                    finally:
+                        release_dl_memory()
                     if dm:
-                        if base_rmse:
-                            dm["improvement"] = round((base_rmse - dm["rmse"]) / base_rmse * 100, 1)
                         all_metrics.append({"model": dl_name, "city_id": zid, "horizon": h, **dm})
-                        print(f"zone {zid} {h} {dl_name}: RMSE={dm['rmse']:.2f} R2={dm['r2']:.3f} F1={dm['f1']:.3f}")
+                        if dm.get("train_rmse") is not None:
+                            training_metrics.append({"model": dl_name, "city_id": zid, "horizon": h,
+                                                     "mae": dm.get("train_mae"), "rmse": dm.get("train_rmse"),
+                                                     "mape": dm.get("train_mape", 0), "smape": dm.get("train_smape", 0),
+                                                     "r2": dm.get("train_r2"), "f1": dm.get("train_f1"),
+                                                     "prec": dm.get("train_prec"), "rec": dm.get("train_rec"),
+                                                     "acc": dm.get("train_acc"), "auc": dm.get("train_auc"),
+                                                     "latency": dm.get("latency", 0), "split": "train"})
+                        if dm.get("val_rmse") is not None:
+                            validation_metrics.append({"model": dl_name, "city_id": zid, "horizon": h,
+                                                       "mae": dm.get("val_mae"), "rmse": dm.get("val_rmse"),
+                                                       "mape": dm.get("val_mape", 0), "smape": dm.get("val_smape", 0),
+                                                       "r2": dm.get("val_r2"), "f1": dm.get("val_f1"),
+                                                       "prec": dm.get("val_prec"), "rec": dm.get("val_rec"),
+                                                       "acc": dm.get("val_acc"), "auc": dm.get("val_auc"),
+                                                       "latency": dm.get("latency", 0), "split": "validation"})
+                        try:
+                            for pred_value, actual_value in zip(dm.get("y_pred", []), dm.get("y_true", [])):
+                                pred_rows.append((str(zid), h, dl_name, float(pred_value), float(actual_value)))
+                        except Exception:
+                            pass
+                        print(f"zone {zid} {h} {dl_name}: TRAIN RMSE={dm.get('train_rmse', float('nan')):.2f} | TEST RMSE={dm['rmse']:.2f} R2={dm['r2']:.3f} F1={dm['f1']:.3f} | VAL RMSE={dm.get('val_rmse', float('nan')):.2f}")
 
-            # --- NOUVEAU v4.0 : BiLSTM + Autoencoder ---
-            # L'autoencodeur LSTM apprend d'abord une representation latente
-            # compressee des fenetres multivariees (polluants + meteo) sur le
-            # train uniquement, puis le BiLSTM de prevision est branche sur ces
-            # features latentes (option (a) du prompt : reduction de dimension
-            # + debruitage avant prevision).
             if bilstm_autoencoder is not None and bilstm_autoencoder.available():
                 try:
-                    dm = bilstm_autoencoder.train_bilstm_ae(
-                        records, step, first_ho, zone_id=zid, saved_dir=SAVED)
-                except Exception as e:
-                    dm = None; print(f"  BiLSTM+AE skipped: {e}")
+                    dm = bilstm_autoencoder.train_bilstm_ae(records, step, first_val, first_test,
+                                                             zone_id=zid, saved_dir=SAVED,
+                                                             prepared_matrix=dl_matrix)
+                except Exception as exc:
+                    dm = None
+                    print(f"  BiLSTM+AE skipped: {exc}")
+                finally:
+                    release_dl_memory()
                 if dm:
-                    if base_rmse:
-                        dm["improvement"] = round((base_rmse - dm["rmse"]) / base_rmse * 100, 1)
-                    all_metrics.append({"model": "BiLSTM+AE", "city_id": zid,
-                                        "horizon": h, **dm})
+                    all_metrics.append({"model": "BiLSTM+AE", "city_id": zid, "horizon": h, **dm})
+                    if dm.get("train_rmse") is not None:
+                        training_metrics.append({"model": "BiLSTM+AE", "city_id": zid, "horizon": h,
+                                                 "mae": dm.get("train_mae"), "rmse": dm.get("train_rmse"),
+                                                 "mape": dm.get("train_mape", 0), "smape": dm.get("train_smape", 0),
+                                                 "r2": dm.get("train_r2"), "f1": dm.get("train_f1"),
+                                                 "prec": dm.get("train_prec"), "rec": dm.get("train_rec"),
+                                                 "acc": dm.get("train_acc"), "auc": dm.get("train_auc"),
+                                                 "latency": dm.get("latency", 0), "split": "train"})
+                    if dm.get("val_rmse") is not None:
+                        validation_metrics.append({"model": "BiLSTM+AE", "city_id": zid, "horizon": h,
+                                                   "mae": dm.get("val_mae"), "rmse": dm.get("val_rmse"),
+                                                   "mape": dm.get("val_mape", 0), "smape": dm.get("val_smape", 0),
+                                                   "r2": dm.get("val_r2"), "f1": dm.get("val_f1"),
+                                                   "prec": dm.get("val_prec"), "rec": dm.get("val_rec"),
+                                                   "acc": dm.get("val_acc"), "auc": dm.get("val_auc"),
+                                                   "latency": dm.get("latency", 0), "split": "validation"})
                     try:
-                        _yt3 = list(dm.get("y_true", []))
-                        _yp3 = list(dm.get("y_pred", []))
-                        for _i in range(min(len(_yp3), len(_yt3))):
-                            pred_rows.append((str(zid), h, "BiLSTM+AE",
-                                              float(_yp3[_i]), float(_yt3[_i])))
+                        for pred_value, actual_value in zip(dm.get("y_pred", []), dm.get("y_true", [])):
+                            pred_rows.append((str(zid), h, "BiLSTM+AE", float(pred_value), float(actual_value)))
                     except Exception:
                         pass
-                    print(f"zone {zid} {h} BiLSTM+AE: RMSE={dm['rmse']:.2f} "
-                          f"R2={dm['r2']:.3f} F1={dm['f1']:.3f}")
+                    print(f"zone {zid} {h} BiLSTM+AE: TRAIN RMSE={dm.get('train_rmse', float('nan')):.2f} | TEST RMSE={dm['rmse']:.2f} R2={dm['r2']:.3f} F1={dm['f1']:.3f} | VAL RMSE={dm.get('val_rmse', float('nan')):.2f}")
 
-            if base_rmse is not None:
-                all_metrics.append({"model": "AR(7) Baseline", "city_id": zid, "horizon": h,
-                                    "mae": round(float(np.mean(np.abs(yte_ar-pred_ar))), 3),
-                                    "rmse": round(base_rmse, 3), "mape": 0, "smape": 0,
-                                    "r2": 0, "f1": round(_f1(yte_ar, pred_ar), 3),
-                                    "acc": round(_acc(yte_ar, pred_ar) * 100, 1), "latency": 0.5})
 
-        # fuzzy + health for the latest point
+            del dl_prepared, dl_matrix
+            gc.collect()
+
         _save_fuzzy_health(conn, zid, records[-1])
 
-    # NOTE v4.0 : le filtre `synth_zids` a ete supprime. Il existait pour
-    # exclure des tables de metriques les zones qui n'avaient aucune donnee
-    # reelle et tournaient sur du simule. open_data couvrant les 7 villes avec
-    # ~21 000 lignes reelles chacune, toutes les zones sont desormais legitimes
-    # et toutes les metriques sont directement reportables.
-
     save_metrics_db(conn, all_metrics)
+    save_validation_metrics_db(conn, validation_metrics)
+    save_training_metrics_db(conn, training_metrics)
     save_hyperparams_db(conn, hyperparams)
     _save_predictions_db(conn, pred_rows)
 
-    # --- REAL Deep Learning page artifacts (attention + predictions + series) ---
     dl_attention = None
     if deep_models is not None and deep_models.available() and attn_records is not None:
         try:
-            dl_attention = deep_models.attention_matrix(attn_records, 1)
-        except Exception as e:
-            print("[dl] attention skipped:", e)
+            if attn_bounds:
+                dl_attention = deep_models.attention_matrix(attn_records, 1,
+                                                            attn_bounds[0], attn_bounds[1])
+            else:
+                dl_attention = deep_models.attention_matrix(attn_records, 1)
+        except Exception as exc:
+            print("[dl] attention skipped:", exc)
     predictions = []
     for zid, horizons in dl_forecasts.items():
         zmeta = zones_meta.get(zid, {})
@@ -786,67 +1042,49 @@ def main():
             if h in horizons:
                 hh = horizons[h]
                 hs.append({"h": h.replace("h", ""), "predicted": hh["predicted"],
-                           "level": hh["level"], "conf": hh["conf"]})
-        predictions.append({
-            "zone_id": zid, "name": zmeta.get("name", f"Zone {zid}"),
-            "name_ar": zmeta.get("name_ar", ""), "type": zmeta.get("category", ""),
-            "horizons": hs,
-        })
+                           "level": hh["level"], "conf": hh["conf"],
+                           "model": hh.get("model", "—"),
+                           "validation_rmse": hh.get("validation_rmse"),
+                           "test_rmse": hh.get("test_rmse")})
+        predictions.append({"zone_id": zid, "name": zmeta.get("name", f"Zone {zid}"),
+                            "name_ar": zmeta.get("name_ar", ""),
+                            "type": zmeta.get("category", ""), "horizons": hs})
     save_dl_artifacts(conn, predictions, dl_series, dl_attention)
 
-    # --- REAL modern XAI (TreeSHAP / DeepSHAP / LIME) for the forecast-ML page ---
     try:
         save_pollutant_xai(conn)
-    except Exception as e:
-        print("[xai] global skipped:", e)
+    except Exception as exc:
+        print("[xai] global skipped:", exc)
 
-    with open(os.path.join(SAVED, "training_summary.json"), "w") as f:
+    with open(os.path.join(SAVED, "test_summary.json"), "w") as f:
         json.dump(all_metrics, f, indent=2)
+    with open(os.path.join(SAVED, "validation_summary.json"), "w") as f:
+        json.dump(validation_metrics, f, indent=2)
+    with open(os.path.join(SAVED, "training_summary.json"), "w") as f:
+        json.dump(training_metrics, f, indent=2)
 
-    # UPGRADE v6 — hooks scientifiques (isoles, ne cassent jamais l'entrainement).
     try:
         _run_v6_hooks(conn, all_metrics)
-    except Exception as e:
-        print(f"[v6] hooks globaux sautes: {e}")
+    except Exception as exc:
+        print(f"[v6] hooks globaux sautes: {exc}")
 
     if conn:
         conn.close()
     print("=" * 60)
-    print(f"DONE. {len(all_metrics)} metric rows. Models in {SAVED}/")
-    print("Source: open_data (Open-Meteo/CAMS) - 0 ligne synthetique, 0 CGAN")
-    print("Summary written to models/saved/training_summary.json")
+    print(f"DONE. {len(training_metrics)} train rows, {len(validation_metrics)} validation rows, {len(all_metrics)} test rows.")
+    print(f"Models in {SAVED}/; train summary in training_summary.json; validation summary in validation_summary.json; test summary in test_summary.json")
+    print("Source: open_data (Open-Meteo/CAMS) - 0 ligne synthetique")
 
 
 def _make_xgb(Xtr, ytr):
+    """Entraine XGBoost reellement, ou signale son absence sans le renommer."""
     try:
         import xgboost as xgb
-        m = xgb.XGBRegressor(n_estimators=300, max_depth=6, learning_rate=0.05,
-                             subsample=0.85, colsample_bytree=0.8, random_state=42)
-        m.fit(Xtr, ytr)
-        return m
-    except Exception:
-        return ml_models.train_random_forest(Xtr, ytr, n_estimators=200)
-
-
-def _make_gbr(Xtr, ytr):
-    """Gradient Boosting regressor (real, sklearn - always available)."""
-    from sklearn.ensemble import GradientBoostingRegressor
-    m = GradientBoostingRegressor(n_estimators=300, max_depth=3, learning_rate=0.05,
-                                  subsample=0.9, random_state=42)
-    m.fit(Xtr, ytr)
-    return m
-
-
-def _make_mlp(Xtr, ytr):
-    """Real neural network (multi-layer perceptron) with feature scaling."""
-    from sklearn.neural_network import MLPRegressor
-    from sklearn.pipeline import make_pipeline
-    from sklearn.preprocessing import StandardScaler
-    m = make_pipeline(
-        StandardScaler(),
-        MLPRegressor(hidden_layer_sizes=(128, 64), activation="relu", max_iter=500,
-                     early_stopping=True, random_state=42),
-    )
+    except Exception as exc:
+        raise RuntimeError(f"XGBoost indisponible: {exc}") from exc
+    m = xgb.XGBRegressor(n_estimators=300, max_depth=6, learning_rate=0.05,
+                         subsample=0.85, colsample_bytree=0.8,
+                         objective="reg:squarederror", random_state=42)
     m.fit(Xtr, ytr)
     return m
 

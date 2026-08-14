@@ -37,8 +37,8 @@ window.initComparison = async function () {
       return;
     }
 
-    $('#cmp-demo-badge').style.display = d.demo ? '' : 'none';
-    if (window.GT && GT.notTrainedGuard && GT.notTrainedGuard(d.demo)) return;
+    const badge = $('#cmp-demo-badge');
+    if (badge) badge.style.display = 'none';
     renderBest(d.best);
     renderMaster(d.master);
     renderHorizon(d.horizonModels, d.horizons);
@@ -57,6 +57,9 @@ window.initComparison = async function () {
 
   function renderBest(b) {
     if (!b) return;
+    const ref = b.vs_baseline || {};
+    const pct = (v, sign) => (v === null || v === undefined || v === '') ? '—' : `${sign}${v}%`;
+    const components = Array.isArray(b.components) ? b.components : [];
     $('#cmp-best').innerHTML = `
       <div class="sci-best-head">
         <span class="sci-best-check"><svg class="ico-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
@@ -66,19 +69,19 @@ window.initComparison = async function () {
         </div>
       </div>
       <div class="sci-best-metrics">
-        <div class="sci-best-metric"><span>RMSE</span><b class="pos">-${b.vs_baseline.rmse}%</b></div>
-        <div class="sci-best-metric"><span>F1</span><b class="pos">+${b.vs_baseline.f1}%</b></div>
-        <div class="sci-best-metric"><span>AUC</span><b class="pos">+${b.vs_baseline.auc}%</b></div>
+        <div class="sci-best-metric"><span>RMSE</span><b class="pos">${pct(ref.rmse, '-')}</b></div>
+        <div class="sci-best-metric"><span>F1</span><b class="pos">${pct(ref.f1, '+')}</b></div>
+        <div class="sci-best-metric"><span>AUC</span><b class="pos">${pct(ref.auc, '+')}</b></div>
         ${(b.wilcoxon_p || b.wilcoxon_p === 0) ? `<div class="sci-best-metric"><span>Wilcoxon</span><b>${b.wilcoxon_p < 0.001 ? 'p&lt;0.001' : 'p=' + b.wilcoxon_p}</b></div>` : ''}
       </div>
       <div class="sci-best-comp">
-        ${b.components.map(c => `<span class="sci-chip">✓ ${c}</span>`).join('')}
+        ${components.map(c => `<span class="sci-chip">✓ ${c}</span>`).join('')}
       </div>`;
   }
 
   function renderMaster(rows) {
     const tb = $('#cmp-master').querySelector('tbody');
-    if (!rows || !rows.length) { tb.innerHTML = '<tr><td colspan="12" class="muted">Aucune donnée.</td></tr>'; return; }
+    if (!rows || !rows.length) { tb.innerHTML = '<tr><td colspan="12" class="muted">Aucun résultat réel disponible. Lancez l\'entraînement sur les sept zones.</td></tr>'; return; }
     tb.innerHTML = rows.map(m => `
       <tr class="${m.recommended ? 'sci-row-best' : ''}">
         <td>${m.recommended ? '<svg class="ico-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> ' : ''}<b>${m.model}</b></td>
@@ -94,7 +97,7 @@ window.initComparison = async function () {
 
   function renderHorizon(models, hz) {
     const tb = $('#cmp-horizon').querySelector('tbody');
-    if (!models || !hz) { tb.innerHTML = '<tr><td colspan="10" class="muted">Aucune donnée.</td></tr>'; return; }
+    if (!models || !hz) { tb.innerHTML = '<tr><td colspan="10" class="muted">Aucun résultat réel multi-horizon disponible.</td></tr>'; return; }
     tb.innerHTML = models.map(name => {
       const c = (h) => (hz[h] && hz[h][name]) ? hz[h][name] : { rmse: '—', f1: '—', auc: '—' };
       const a = c('1h'), b = c('6h'), d = c('24h');
@@ -107,7 +110,7 @@ window.initComparison = async function () {
 
   function renderAblation(rows) {
     const tb = $('#cmp-ablation').querySelector('tbody');
-    if (!rows || !rows.length) { tb.innerHTML = '<tr><td colspan="7" class="muted">Aucune donnée.</td></tr>'; return; }
+    if (!rows || !rows.length) { tb.innerHTML = '<tr><td colspan="7" class="muted">Aucun classement réel disponible.</td></tr>'; return; }
     const arrow = (v, up) => v === null ? '<span class="muted">—</span>'
       : `<span class="${(up ? v > 0 : v > 0) ? 'delta-pos' : 'delta-neg'}">${up ? '↑' : '↓'}${Math.abs(v)}%</span>`;
     tb.innerHTML = rows.map((r, i) => `
@@ -129,7 +132,7 @@ window.initComparison = async function () {
 
   function renderLit(rows, note) {
     const tb = $('#cmp-lit').querySelector('tbody');
-    if (!rows || !rows.length) { tb.innerHTML = '<tr><td colspan="5" class="muted">Aucune donnée.</td></tr>'; return; }
+    if (!rows || !rows.length) { tb.innerHTML = '<tr><td colspan="5" class="muted">Aucune comparaison externe ou résultat réel disponible.</td></tr>'; return; }
     tb.innerHTML = rows.map(r => `
       <tr class="${r.ours ? 'sci-row-best' : ''}">
         <td>${r.ours ? '<svg class="ico-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> ' : ''}<b>${r.study}${!r.ours ? ' *' : ''}</b>${r.note ? `<div class="muted small">${r.note}</div>` : ''}${r.doi ? `<div class="muted small">DOI : ${r.doi}</div>` : ''}</td><td>${r.year}</td>

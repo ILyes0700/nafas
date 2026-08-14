@@ -1,87 +1,103 @@
 <?php
+declare(strict_types=1);
+
 /**
- * Forecast metrics endpoint — exposes the comparison table of every model
- * (EWMA baseline, AR(7), MEWMA, Ensemble) used by the admin dashboard to
- * prove the hybrid pipeline beats the legacy EWMA.
+ * Nafass — مقاييس Forecast الحقيقية.
  *
- *   GET /backend/api/forecast-metrics.php             → latest per model
- *   GET /backend/api/forecast-metrics.php?zone_id=3   → filtered by zone
- *   GET /backend/api/forecast-metrics.php?train=1     → re-train all zones
+ * لا يعيد هذا endpoint تدريباً داخل PHP ولا ينشئ أرقاماً تجريبية. التدريب يتم
+ * من خلال Python ثم تُقرأ النتائج من forecast_metrics أو model_performance.
  */
 require_once __DIR__ . '/../lib/helpers.php';
 require_once __DIR__ . '/../lib/auth.php';
 require_once __DIR__ . '/../lib/forecast_ml.php';
 
 $me = auth_user();
-if (!$me || !in_array($me['role'], ['admin'], true)) {
-    json_response(['ok' => false, 'error' => 'admin_or_health_only'], 403);
+if (!$me || !in_array($me['role'] ?? '', ['admin'], true)) {
+    json_response(['ok' => false, 'error' => 'admin_required'], 403);
 }
 
-$pdo = db();
+try {
+    $pdo = db();
+    if (!empty($_GET['train'])) {
+        json_response([
+            'ok' => false,
+            'data_status' => 'not_trained',
+            'error' => 'python_training_required',
+            'message' => 'Le réentraînement réel se lance avec : python -m models.train_all',
+        ], 409);
+    }
 
-if (!empty($_GET['train'])) {
-    $results = ml_forecast_all_zones($pdo);
-    json_response(['ok' => true, 'trained' => count($results), 'results' => $results]);
-}
+    $zone = isset($_GET['zone_id']) ? max(0, (int)$_GET['zone_id']) : 0;
+    $horizon = (string)($_GET['horizon'] ?? '');
+    if ($horizon !== '' && !in_array($horizon, ['1h', '6h', '24h'], true)) $horizon = '';
 
-$zone = isset($_GET['zone_id']) ? (int)$_GET['zone_id'] : 0;
-$where = $zone ? 'WHERE zone_id = ' . $zone : '';
+    $rows = [];
+    if (ml_table_exists($pdo, 'model_performance')) {
+        $where = [];
+        $params = [];
+        if ($zone > 0) { $where[] = 'city_id = ?'; $params[] = (string)$zone; }
+        if ($horizon !== '') { $where[] = 'horizon = ?'; $params[] = $horizon; }
+        $sql = "SELECT model_name, city_id AS zone_id, horizon, mae, rmse, mape,
+                       r_squared AS r2, smape, NULL AS sample_size,
+                       evaluated_at AS trained_at
+                FROM model_performance";
+        if ($where) $sql .= ' WHERE ' . implode(' AND ', $where);
+        $sql .= ' ORDER BY evaluated_at DESC LIMIT 500';
+        $st = $pdo->prepare($sql);
+        $st->execute($params);
+        $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+    }
 
-$rows = $pdo->query(
-    "SELECT model_name, zone_id, mae, rmse, mape, r2, smape, sample_size, trained_at
-     FROM forecast_metrics $where
-     ORDER BY trained_at DESC LIMIT 200"
-)->fetchAll();
+    if (!$rows && ml_table_exists($pdo, 'forecast_metrics')) {
+        $where = [];
+        $params = [];
+        if ($zone > 0) { $where[] = 'zone_id = ?'; $params[] = $zone; }
+        $sql = 'SELECT model_name, zone_id, NULL AS horizon, mae, rmse, mape, r2, smape, sample_size, trained_at FROM forecast_metrics';
+        if ($where) $sql .= ' WHERE ' . implode(' AND ', $where);
+        $sql .= ' ORDER BY trained_at DESC LIMIT 500';
+        $st = $pdo->prepare($sql);
+        $st->execute($params);
+        $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+    }
 
-/* Fix #5: forecast_metrics is written by the PHP EWMA/AR path. When the REAL
-   Python pipeline (models/train_all.py) produced the numbers instead, they live
-   in model_performance. Fall back to it so this page stays consistent with the
-   Deep-Learning / Forecast-ML pages rather than showing an empty table. */
-if (!$rows) {
-    $mpWhere = $zone ? ('WHERE city_id = ' . $zone) : '';
-    $rows = $pdo->query(
-        "SELECT model_name, city_id AS zone_id, mae, rmse, mape,
-                r_squared AS r2, smape, NULL AS sample_size, evaluated_at AS trained_at
-         FROM model_performance $mpWhere
-         ORDER BY evaluated_at DESC LIMIT 200"
-    )->fetchAll();
-}
+    if (!$rows) {
+        json_response([
+            'ok' => true,
+            'data_status' => 'empty',
+            'message' => 'Aucune métrique réelle disponible. Exécutez le pipeline Python puis rechargez la page.',
+            'summary' => [], 'rows' => [], 'horizon' => $horizon ?: null,
+        ]);
+    }
 
-/* Build a comparison table: latest metric per model, averaged across zones */
-$byModel = [];
-foreach ($rows as $r) {
-    $m = $r['model_name'];
-    if (!isset($byModel[$m])) {
-        $byModel[$m] = [
-            'model' => $m, 'n_zones' => 0,
-            'mae_sum'=>0,'rmse_sum'=>0,'mape_sum'=>0,'r2_sum'=>0,'smape_sum'=>0,
-            'latest'=>$r['trained_at'],
+    $byModel = [];
+    foreach ($rows as $row) {
+        $name = (string)($row['model_name'] ?? '');
+        if ($name === '') continue;
+        if (!isset($byModel[$name])) {
+            $byModel[$name] = ['model' => $name, 'n' => 0, 'mae' => 0.0, 'rmse' => 0.0, 'mape' => 0.0, 'r2' => 0.0, 'smape' => 0.0, 'latest' => $row['trained_at'] ?? null];
+        }
+        $byModel[$name]['n']++;
+        foreach (['mae', 'rmse', 'mape', 'r2', 'smape'] as $field) {
+            $byModel[$name][$field] += (float)($row[$field] ?? 0);
+        }
+    }
+    $summary = [];
+    foreach ($byModel as $item) {
+        $n = max(1, $item['n']);
+        $summary[] = [
+            'model' => $item['model'], 'mae' => round($item['mae'] / $n, 3),
+            'rmse' => round($item['rmse'] / $n, 3), 'mape' => round($item['mape'] / $n, 3),
+            'r2' => round($item['r2'] / $n, 3), 'smape' => round($item['smape'] / $n, 3),
+            'n_runs' => $item['n'], 'latest' => $item['latest'],
         ];
     }
-    $byModel[$m]['n_zones']  += 1;
-    $byModel[$m]['mae_sum']  += (float)$r['mae'];
-    $byModel[$m]['rmse_sum'] += (float)$r['rmse'];
-    $byModel[$m]['mape_sum'] += (float)$r['mape'];
-    $byModel[$m]['r2_sum']   += (float)$r['r2'];
-    $byModel[$m]['smape_sum']+= (float)$r['smape'];
-}
-$summary = [];
-foreach ($byModel as $m) {
-    $n = max(1, $m['n_zones']);
-    $summary[] = [
-        'model' => $m['model'],
-        'mae'   => round($m['mae_sum'] / $n, 3),
-        'rmse'  => round($m['rmse_sum'] / $n, 3),
-        'mape'  => round($m['mape_sum'] / $n, 3),
-        'r2'    => round($m['r2_sum']   / $n, 3),
-        'smape' => round($m['smape_sum']/ $n, 3),
-        'n_runs'=> $m['n_zones'],
-        'latest'=> $m['latest'],
-    ];
-}
+    usort($summary, static fn(array $a, array $b): int => $a['rmse'] <=> $b['rmse']);
 
-json_response([
-    'ok'      => true,
-    'summary' => $summary,
-    'rows'    => $rows,
-]);
+    json_response([
+        'ok' => true, 'data_status' => 'real', 'horizon' => $horizon ?: null,
+        'message' => 'Métriques réellement persistées par le pipeline.',
+        'summary' => $summary, 'rows' => $rows,
+    ]);
+} catch (Throwable $e) {
+    json_response(['ok' => false, 'data_status' => 'error', 'error' => 'metrics_backend_error', 'message' => $e->getMessage()], 500);
+}
