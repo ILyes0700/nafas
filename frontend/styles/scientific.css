@@ -134,3 +134,63 @@
 .mlcmp .cix-chip{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:700;width:fit-content}
 .mlcmp .c-lo{background:#e7f6ee;color:#15803d}.mlcmp .c-md{background:#fef3c7;color:#92400e}.mlcmp .c-hi{background:#ffedd5;color:#c2410c}
 .pf2-dark .mlcmp-card,.pf2-dark .mlcmp-metric{background:#2b2c2d;border-color:#3a3b3c}
+
+
+/* ============================================================================
+   Nafass Scientific UI — refinement layer
+   Real-data states, dashboard rhythm, readable tables and responsive charts.
+   ============================================================================ */
+.sci-page {
+  --sci-ink: #16283f;
+  --sci-blue: #0d3b66;
+  --sci-blue-soft: #eaf2fb;
+  --sci-line: #e4eaf2;
+  --sci-muted: #6b7a90;
+  --sci-shadow: 0 12px 30px rgba(13, 59, 102, .08);
+}
+.sci-page > .card {
+  box-shadow: var(--sci-shadow);
+  border-color: var(--sci-line);
+  transition: box-shadow .18s ease, transform .18s ease;
+}
+.sci-page > .card:hover { box-shadow: 0 16px 34px rgba(13, 59, 102, .12); }
+.sci-page .page-head { align-items: flex-start; gap: 18px; }
+.sci-page .ph-sub { max-width: 920px; line-height: 1.55; }
+.sci-page .table-wrap { overflow-x: auto; border: 1px solid var(--sci-line); border-radius: 12px; background: #fff; }
+.sci-page .sci-table { min-width: 760px; }
+.sci-page .sci-table th { position: sticky; top: 0; z-index: 1; }
+.sci-page .sci-table tbody tr { transition: background .16s ease; }
+.sci-page .chart-box { padding: 10px 8px 4px; border: 1px solid var(--sci-line); border-radius: 12px; background: linear-gradient(180deg, #fff, #fbfdff); }
+.sci-page .chart-box canvas { max-width: 100%; }
+.chart-empty { min-height: 150px; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--sci-muted, #6b7a90); background: repeating-linear-gradient(-45deg, #fbfdff, #fbfdff 10px, #f5f8fc 10px, #f5f8fc 20px); border: 1px dashed #cbd8e7; border-radius: 10px; line-height: 1.55; }
+.chart-empty strong { display: block; color: var(--sci-ink, #16283f); margin-bottom: 4px; }
+.real-status { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid #cfe3d8; border-left: 4px solid #16a34a; border-radius: 12px; background: #f4fbf6; color: #14532d; }
+.real-status.is-empty { border-color: #d8e1ec; border-left-color: #94a3b8; background: #f8fafc; color: #475569; }
+.real-status.is-error { border-color: #fecaca; border-left-color: #dc2626; background: #fff7f7; color: #991b1b; }
+.real-status-dot { width: 9px; height: 9px; flex: 0 0 auto; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 4px rgba(22, 163, 74, .12); }
+.metric-caption { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 8px 0 12px; color: var(--sci-muted, #6b7a90); font-size: .78rem; }
+.metric-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border: 1px solid #d8e4f0; border-radius: 999px; background: #f7fbff; color: var(--sci-blue, #0d3b66); font-weight: 700; font-size: .72rem; }
+.metric-chip::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #16a34a; }
+.sci-best { position: relative; overflow: hidden; }
+.sci-best::after { content: ''; position: absolute; width: 220px; height: 220px; right: -90px; top: -110px; border: 1px solid rgba(255,255,255,.14); border-radius: 50%; box-shadow: 0 0 0 18px rgba(255,255,255,.04), 0 0 0 36px rgba(255,255,255,.03); pointer-events: none; }
+.sci-best-metrics { position: relative; z-index: 1; }
+.sci-best-comp { position: relative; z-index: 1; }
+.dl-vs-wrap { display: grid; gap: 14px; }
+.dl-vs-wrap h4 { color: var(--sci-blue, #0d3b66); letter-spacing: .01em; }
+.dl-pred-card { box-shadow: 0 6px 18px rgba(13,59,102,.06); transition: transform .18s ease, box-shadow .18s ease; }
+.dl-pred-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(13,59,102,.1); }
+.bae-arch { padding: 6px; }
+.bae-step { box-shadow: 0 5px 14px rgba(13,59,102,.06); }
+#ml-optuna { min-height: 88px; }
+#ml-optuna .real-config-card { border: 1px solid var(--sci-line); border-radius: 12px; padding: 12px 14px; background: #fbfdff; }
+#ml-optuna .real-config-card b { display: block; color: var(--sci-blue); margin-bottom: 4px; }
+.cmp-empty-card { min-height: 110px; display: grid; place-items: center; padding: 18px; text-align: center; color: var(--sci-muted); border: 1px dashed #cbd8e7; border-radius: 12px; background: #fbfdff; line-height: 1.55; }
+.cmp-empty-card strong { display: block; color: var(--sci-ink); margin-bottom: 3px; }
+@media (max-width: 900px) {
+  .sci-page .page-head { flex-direction: column; }
+  .sci-page .ph-actions { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
+  .sci-page .grid.grid-3, .sci-page .grid.grid-2 { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sci-page > .card, .dl-pred-card, .sci-table tbody tr { transition: none; }
+}

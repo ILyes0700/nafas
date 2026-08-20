@@ -83,7 +83,7 @@ FEATURES = list(getattr(shared_dl_features, "FEATURE_NAMES", [
 
 
 def _to_matrix(records: list[dict]) -> np.ndarray:
-    """Convertit les enregistrements en matrice des 35 features réelles partagées."""
+    """Convertit les enregistrements en matrice des 54 features causales partagées."""
     if shared_dl_features is not None and hasattr(shared_dl_features, "build_feature_matrix"):
         return np.asarray(shared_dl_features.build_feature_matrix(records), dtype=np.float32)
     out = np.zeros((len(records), len(FEATURES)), dtype=np.float32)
@@ -98,21 +98,31 @@ def _to_matrix(records: list[dict]) -> np.ndarray:
 
 
 def _windows(mat: np.ndarray, target: np.ndarray, horizon_step: int,
-             lo: int, hi: int, window: int | None = None):
-    """Construit les fenetres glissantes dont la CIBLE tombe dans [lo, hi).
+             lo: int, hi: int, window: int | None = None,
+             records: list[dict] | None = None):
+    """Construit les fenêtres dont la dernière observation est t et la cible t+h.
 
-    C'est le point critique anti-fuite : on indexe par la position de la
-    cible, pas par celle de la fenetre. Une fenetre qui se termine avant la
-    frontiere mais dont la cible tombe apres serait une fuite ; elle est
-    exclue du train par construction.
+    Le début est retardé à 168 heures afin que les lags hebdomadaires soient
+    réels. Les variables calendaires du dernier pas sont alignées sur la cible
+    connue t+h, sans utiliser sa valeur AQI.
     """
     window = int(window or _window_length(horizon_step))
+    start = max(window - 1, 167)
     X, y = [], []
-    for t in range(window, len(mat) - horizon_step):
-        tgt = t + horizon_step
+    for last_idx in range(start, len(mat) - horizon_step):
+        tgt = last_idx + horizon_step
         if not (lo <= tgt < hi):
             continue
-        X.append(mat[t - window:t])
+        window_values = np.array(mat[last_idx - window + 1:last_idx + 1], dtype=np.float32, copy=True)
+        if records is not None and tgt < len(records) and window_values.shape[1] >= 35:
+            if shared_dl_features is not None and hasattr(shared_dl_features, "_time_parts"):
+                hour, weekend, season = shared_dl_features._time_parts(records[tgt], tgt)
+                window_values[-1, 32:35] = (hour, weekend, season)
+                window_values[-1, 47:49] = (
+                    np.sin(2.0 * np.pi * hour / 24.0),
+                    np.cos(2.0 * np.pi * hour / 24.0),
+                )
+        X.append(window_values)
         y.append(target[tgt])
     if not X:
         return np.empty((0, window, mat.shape[1]), np.float32), np.empty((0,), np.float32)
@@ -162,7 +172,9 @@ def _build_forecaster(encoder, n_feats: int, window: int):
     out = layers.Dense(1, name="aqi")(h)
 
     m = Model(inp, out, name="bilstm_autoencoder")
-    m.compile(optimizer="adam", loss="mse", metrics=["mae"])
+    # Huber conserve les événements réels élevés tout en limitant l'effet
+    # d'une poignée de valeurs extrêmes dans l'apprentissage de +24h.
+    m.compile(optimizer="adam", loss="huber", metrics=["mae"])
     return m
 
 
@@ -263,18 +275,27 @@ def train_bilstm_ae(records: list[dict], horizon_step: int, first_ho: int,
     lo, hi = train_mat.min(axis=0), train_mat.max(axis=0)
     rng = np.where((hi - lo) < 1e-6, 1.0, hi - lo)
     norm_train = (mat - lo) / rng
-    Xtr, ytr = _windows(norm_train, target, horizon_step, 0, first_ho, window)
-    Xval, yval = _windows(norm_train, target, horizon_step, first_ho, first_test, window)
+    Xtr, ytr = _windows(norm_train, target, horizon_step, 0, first_ho, window, records=records)
+    Xval, yval = _windows(norm_train, target, horizon_step, first_ho, first_test, window, records=records)
     if len(Xtr) < 50 or len(Xval) < 10:
         return None
 
     ae_sel, enc_sel = _build_autoencoder(n_feats, window)
-    stop = callbacks.EarlyStopping(patience=8, restore_best_weights=True)
-    ae_sel.fit(Xtr, Xtr, epochs=AE_EPOCHS, batch_size=BATCH, verbose=0,
-               validation_data=(Xval, Xval), shuffle=False, callbacks=[stop])
+    ae_history = ae_sel.fit(
+        Xtr, Xtr, epochs=AE_EPOCHS, batch_size=BATCH, verbose=0,
+        validation_data=(Xval, Xval), shuffle=False,
+        callbacks=[callbacks.EarlyStopping(patience=8, restore_best_weights=True)]
+    )
+    ae_val_loss = ae_history.history.get("val_loss", ae_history.history.get("loss", []))
+    ae_best_epochs = max(1, int(np.argmin(ae_val_loss) + 1)) if len(ae_val_loss) else AE_EPOCHS
     fc_sel = _build_forecaster(enc_sel, n_feats, window)
-    fc_sel.fit(Xtr, ytr, epochs=FC_EPOCHS, batch_size=BATCH, verbose=0,
-               validation_data=(Xval, yval), shuffle=False, callbacks=[stop])
+    fc_history = fc_sel.fit(
+        Xtr, ytr, epochs=FC_EPOCHS, batch_size=BATCH, verbose=0,
+        validation_data=(Xval, yval), shuffle=False,
+        callbacks=[callbacks.EarlyStopping(patience=8, restore_best_weights=True)]
+    )
+    fc_val_loss = fc_history.history.get("val_loss", fc_history.history.get("loss", []))
+    fc_best_epochs = max(1, int(np.argmin(fc_val_loss) + 1)) if len(fc_val_loss) else FC_EPOCHS
     train_pred_selection = fc_sel.predict(Xtr, verbose=0).flatten()
     val_pred = fc_sel.predict(Xval, verbose=0).flatten()
     train_metrics = _metrics(ytr, train_pred_selection)
@@ -285,16 +306,16 @@ def train_bilstm_ae(records: list[dict], horizon_step: int, first_ho: int,
     flo, fhi = fit_mat.min(axis=0), fit_mat.max(axis=0)
     frng = np.where((fhi - flo) < 1e-6, 1.0, fhi - flo)
     norm_fit = (mat - flo) / frng
-    Xfit, yfit = _windows(norm_fit, target, horizon_step, 0, first_test, window)
-    Xtest, ytest = _windows(norm_fit, target, horizon_step, first_test, len(records), window)
+    Xfit, yfit = _windows(norm_fit, target, horizon_step, 0, first_test, window, records=records)
+    Xtest, ytest = _windows(norm_fit, target, horizon_step, first_test, len(records), window, records=records)
     if len(Xfit) < 60 or len(Xtest) < 10:
         return None
     ae, encoder = _build_autoencoder(n_feats, window)
-    ae.fit(Xfit, Xfit, epochs=AE_EPOCHS, batch_size=BATCH, verbose=0,
-           validation_split=0.1, shuffle=False)
+    ae.fit(Xfit, Xfit, epochs=ae_best_epochs, batch_size=BATCH, verbose=0,
+           shuffle=False)
     fc = _build_forecaster(encoder, n_feats, window)
-    fc.fit(Xfit, yfit, epochs=FC_EPOCHS, batch_size=BATCH, verbose=0,
-           validation_split=0.1, shuffle=False)
+    fc.fit(Xfit, yfit, epochs=fc_best_epochs, batch_size=BATCH, verbose=0,
+           shuffle=False)
 
     t0 = time.perf_counter()
     y_pred = fc.predict(Xtest, verbose=0).flatten()
@@ -306,6 +327,14 @@ def train_bilstm_ae(records: list[dict], horizon_step: int, first_ho: int,
         out[f"val_{key}"] = val_metrics.get(key)
     out["fit_rmse"] = float(np.sqrt(np.mean((yfit - train_pred) ** 2)))
     out["latency"] = float(latency)
+    out["best_epochs"] = int(fc_best_epochs)
+    out["ae_best_epochs"] = int(ae_best_epochs)
+    latest_window = None
+    if shared_dl_features is not None and hasattr(shared_dl_features, "build_latest_sequence"):
+        latest_window = shared_dl_features.build_latest_sequence(records, horizon_step, matrix=mat)
+    if latest_window is not None:
+        latest_window = (latest_window - flo) / frng
+        out["latest_pred"] = float(fc.predict(latest_window, verbose=0).flatten()[0])
     out["y_true"] = ytest.tolist()
     out["y_pred"] = y_pred.tolist()
     recon = ae.predict(Xtest, verbose=0)

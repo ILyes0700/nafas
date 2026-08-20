@@ -1,0 +1,45 @@
+{
+  "source": "https://historical-forecast-api.open-meteo.com/v1/forecast",
+  "hourly": "dew_point_2m,cloud_cover_low,vapour_pressure_deficit,wind_gusts_10m,wind_speed_80m,wind_direction_80m",
+  "timezone": "UTC",
+  "active_cities": [
+    "Gabes_ville",
+    "Ghannouche",
+    "Chott_Salem",
+    "Teboulbou"
+  ],
+  "start_date": "2024-01-01",
+  "end_date": "2026-07-02",
+  "mode": "apply",
+  "zones": [
+    {
+      "city": "Gabes_ville",
+      "rows": 21936,
+      "nulls": 0,
+      "min_time": "2024-01-01 00:00:00",
+      "max_time": "2026-07-02 23:00:00"
+    },
+    {
+      "city": "Ghannouche",
+      "rows": 21936,
+      "nulls": 0,
+      "min_time": "2024-01-01 00:00:00",
+      "max_time": "2026-07-02 23:00:00"
+    },
+    {
+      "city": "Chott_Salem",
+      "rows": 21936,
+      "nulls": 0,
+      "min_time": "2024-01-01 00:00:00",
+      "max_time": "2026-07-02 23:00:00"
+    },
+    {
+      "city": "Teboulbou",
+      "rows": 21936,
+      "nulls": 0,
+      "min_time": "2024-01-01 00:00:00",
+      "max_time": "2026-07-02 23:00:00"
+    }
+  ],
+  "generated_at": "2026-08-17T14:19:12Z"
+}

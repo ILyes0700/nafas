@@ -5,8 +5,9 @@ CHANGEMENT MAJEUR v4.0 (migration donnees reelles) :
   (~150 lignes reelles par zone + augmentation CGAN + tuilage bruite).
   La source unique est desormais la table `open_data` : dataset reel
   Open-Meteo Air Quality (modele CAMS Europe) + ERA5 pour la meteo,
-  7 villes du gouvernorat de Gabes, granularite horaire,
-  du 2024-01-01 au 2026-07-02 (~21 000 lignes par ville, ~130 000 au total).
+  quatre villes actives du gouvernorat de Gabes, granularite horaire,
+  du 2024-01-01 au 2026-07-02. Le run actif utilise quatre villes autorisees
+  (~21 000 lignes par ville) ; les donnees des autres villes restent dans open_data.
 
   Supprimes definitivement : le CGAN, l'interpolation forcee, le tuilage avec
   bruit gaussien, les zones entierement simulees, et tous les marqueurs
@@ -14,8 +15,8 @@ CHANGEMENT MAJEUR v4.0 (migration donnees reelles) :
 
 Pipeline (par zone, par horizon +1h/+6h/+24h) :
   1. Charge la serie horaire REELLE depuis `open_data` via data_loader
-  2. Construit le vecteur partage de 35 features
-     (AQI courant + lags + tendances + fuzzy Type-2 + polluants + meteo + temporelles)
+  2. Construit le vecteur partage de 54 features causales
+     (AQI + lags/rolling polluants + tendances + fuzzy + meteo enrichie + calendrier)
   3. Entraine uniquement les modèles classiques autorisés : Random Forest,
      XGBoost + Fuzzy
   4. Deep Learning optionnel si TensorFlow present : LSTM, BiLSTM Simple,
@@ -44,10 +45,10 @@ import numpy as np
 
 # allow both "python -m models.train_all" and "python train_all.py"
 try:
-    from . import data_loader, fuzzy_type2, ml_models, db_config, health_impact, statistical_tests
+    from . import data_loader, fuzzy_type2, ml_models, db_config, health_impact, statistical_tests, feature_engineering
 except Exception:
     sys.path.append(os.path.dirname(__file__))
-    import data_loader, fuzzy_type2, ml_models, db_config, health_impact, statistical_tests
+    import data_loader, fuzzy_type2, ml_models, db_config, health_impact, statistical_tests, feature_engineering
 
 from sklearn.ensemble import RandomForestRegressor
 
@@ -73,6 +74,14 @@ except Exception:
 
 SAVED = os.path.join(os.path.dirname(__file__), "saved")
 os.makedirs(SAVED, exist_ok=True)
+RUN_SCHEMA = "nafas-real-7020-4zones-target-aligned-v6-plus24-enriched"
+PROGRESS_FILE = os.path.join(SAVED, "training_progress.json")
+CHECKPOINT_FILE = os.path.join(SAVED, "training_checkpoint.json")
+# Durable copies of the last successfully completed unit. These are never
+# deleted by a new run, so an accidental environment-variable mistake cannot
+# silently destroy the most recent resumable progress.
+LAST_GOOD_PROGRESS_FILE = os.path.join(SAVED, "training_progress.last_good.json")
+LAST_GOOD_CHECKPOINT_FILE = os.path.join(SAVED, "training_checkpoint.last_good.json")
 HORIZON_STEPS = {"1h": 1, "6h": 6, "24h": 24}
 CLASS_BINS = [0, 50, 100, 150, 10_000]  # SAFE/WARNING/CRITICAL/HAZARDOUS
 
@@ -81,19 +90,9 @@ TRAIN_RATIO = 0.70
 VALIDATION_RATIO = 0.10
 TEST_RATIO = 0.20
 
-# Noms des 35 features, dans l'ordre exact produit par _feature_row().
-# Les cinq variables supplementaires sont calculees uniquement a partir du passe.
-# Elles donnent au modele une information de tendance utile pour +24h.
-FEATURE_NAMES = (
-    ["aqi_current"] + [f"aqi_lag_{k}" for k in (1, 2, 3, 4, 5, 6, 7, 24, 168)]
-    + ["aqi_delta_1h", "aqi_delta_6h", "aqi_mean_6h", "aqi_mean_24h", "aqi_std_24h"]
-    + ["fuzzy_score_type2", "uncertainty_lower", "uncertainty_upper"]
-    + ["pm25", "pm10", "so2", "no2", "o3", "co", "dust"]
-    + ["temperature", "humidity", "wind_speed", "wind_direction",
-       "pressure", "precipitation", "cloud_cover"]
-    + ["hour_of_day", "is_weekend", "season"]
-)
-assert len(FEATURE_NAMES) == 35, "FEATURE_NAMES desynchronise avec _feature_row"
+# Single source of truth for the enriched 54-feature causal schema.
+FEATURE_NAMES = list(feature_engineering.FEATURE_NAMES)
+assert len(FEATURE_NAMES) == 54, "FEATURE_NAMES desynchronise avec feature_engineering"
 
 
 def to_series(frame):
@@ -121,62 +120,13 @@ def _time_features(ts, i, offset_hours=0):
 
 
 def _feature_row(records, aqi, i, horizon_step=0):
-    """Vecteur partage pour l'entrainement et la prediction du dernier point.
-
-    Les cinq variables de tendance sont calculees uniquement avec l'historique
-    disponible avant i. Elles n'introduisent donc aucune fuite de la cible.
-    Les caracteristiques calendaires sont alignees sur l'heure cible i+h.
-    """
-    def lag(k):
-        j = i - k
-        return aqi[j] if j >= 0 else aqi[0]
-
-    fz = fuzzy_type2.assess(min(100.0, aqi[i] / 5.0))
-    r = records[i]
-    hod, is_wend, season = _time_features(r.get("ts") or r.get("timestamp"), i, horizon_step)
-
-    def g(key):
-        """Lecture defensive : open_data peut contenir des NULL residuels sur
-        les bords de serie que data_loader n'a pas interpoles (gap > 3h)."""
-        v = r.get(key)
-        return float(v) if v is not None else 0.0
-
-    hist6 = aqi[max(0, i - 5):i + 1]
-    hist24 = aqi[max(0, i - 23):i + 1]
-    delta1 = aqi[i] - lag(1)
-    delta6 = aqi[i] - lag(6)
-    mean6 = float(np.mean(hist6)) if hist6 else aqi[i]
-    mean24 = float(np.mean(hist24)) if hist24 else aqi[i]
-    std24 = float(np.std(hist24)) if len(hist24) > 1 else 0.0
-
-    return [
-        aqi[i],
-        lag(1), lag(2), lag(3), lag(4), lag(5), lag(6), lag(7),
-        lag(24), lag(168),
-        delta1, delta6, mean6, mean24, std24,
-        fz["fuzzy_score_type2"], fz["uncertainty_lower"], fz["uncertainty_upper"],
-        g("pm25"), g("pm10"), g("so2"), g("no2"), g("o3"), g("co"), g("dust"),
-        g("temperature"), g("humidity"), g("wind_speed"), g("wind_direction"),
-        g("pressure"), g("precipitation"), g("cloud_cover"),
-        hod, is_wend, season,
-    ]
+    """Shared causal feature row; aqi is retained for call compatibility."""
+    return feature_engineering.feature_row(records, i, horizon_step=horizon_step)
 
 
-def build_xy(records, horizon_step):
-    """Construit la matrice X et la cible y (AQI a t+h) depuis une liste horaire.
-
-    Avec open_data les series font ~21 000 points par ville, donc le lag
-    hebdomadaire (168h) est toujours utilisable : le demarrage adaptatif est
-    conserve uniquement comme garde-fou pour une ville partiellement importee.
-    """
-    aqi = [float(r["aqi"]) for r in records]
-    n = len(aqi)
-    start = 8 if n < 176 else 168
-    X, y = [], []
-    for i in range(start, n - horizon_step):
-        X.append(_feature_row(records, aqi, i, horizon_step))
-        y.append(aqi[i + horizon_step])
-    return np.array(X, dtype=float), np.array(y, dtype=float)
+def build_xy(records, horizon_step, matrix=None):
+    """Build tabular samples through the shared 54-feature causal builder."""
+    return feature_engineering.build_xy(records, horizon_step, matrix=matrix)
 
 
 def _split_bounds_records(records, train_ratio=TRAIN_RATIO,
@@ -301,10 +251,31 @@ def _split_index(records, horizon_step, n_samples, train_ratio=TRAIN_RATIO):
 
 
 def latest_feature(records, horizon_step=0):
-    """Ligne de features du point reel le plus recent -> vraie prevision +h.
-    Les caracteristiques calendaires sont alignees sur l'horizon cible."""
-    aqi = [float(r["aqi"]) for r in records]
-    return np.array([_feature_row(records, aqi, len(aqi) - 1, horizon_step)], dtype=float)
+    """Latest real-origin row with calendar aligned to t+horizon."""
+    i = len(records) - 1
+    return np.asarray([feature_engineering.feature_row(records, i, horizon_step)], dtype=float)
+
+
+def select_deployment_model(validation_scores, test_scores, latest_predictions):
+    """Select by Validation only; Test is a report and latest is production output."""
+    eligible = {
+        str(name): float(score)
+        for name, score in validation_scores.items()
+        if name in test_scores and name in latest_predictions
+           and np.isfinite(float(score))
+           and np.isfinite(float(test_scores[name]))
+           and np.isfinite(float(latest_predictions[name]))
+    }
+    if not eligible:
+        return None
+    name = min(eligible, key=eligible.get)
+    return {
+        "model": name,
+        "validation_rmse": float(eligible[name]),
+        "test_rmse": float(test_scores[name]),
+        "latest_pred": float(latest_predictions[name]),
+        "eligible_models": sorted(eligible),
+    }
 
 
 def classify(vals):
@@ -388,6 +359,186 @@ def release_dl_memory():
     except Exception:
         pass
     gc.collect()
+
+
+ALLOWED_MODEL_NAMES = (
+    "Random Forest", "XGBoost + Fuzzy", "LSTM", "BiLSTM Simple",
+    "BiLSTM+MultiHead Attn", "BiLSTM+AE", "CNN+AE",
+)
+
+
+def _atomic_json(path, payload):
+    """Ecrit un JSON complet sans laisser un fichier partiellement ecrit."""
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2, ensure_ascii=False, default=str)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, path)
+
+
+def _read_json(path, default):
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return default
+
+
+def _filter_allowed_rows(rows):
+    if not isinstance(rows, list):
+        return []
+    return [r for r in rows if isinstance(r, dict) and r.get("model") in ALLOWED_MODEL_NAMES]
+
+
+def _new_progress(resume=False):
+    return {
+        "schema": RUN_SCHEMA,
+        "protocol": "70/10/20 chronological",
+        "source": "open_data",
+        "models": list(ALLOWED_MODEL_NAMES),
+        "zone_scope": list(data_loader.ALLOWED_CITY_KEYS),
+        "zone_count": len(data_loader.ALLOWED_CITY_KEYS),
+        "horizon_count": len(HORIZON_STEPS),
+        "unit_count": len(data_loader.ALLOWED_CITY_KEYS) * len(HORIZON_STEPS),
+        "status": "resuming" if resume else "running",
+        "completed_units": [],
+        "current": None,
+        "updated_at": dt.datetime.now().isoformat(timespec="seconds"),
+    }
+
+
+def _resume_requested():
+    return os.environ.get("NAFAS_RESUME", "0").strip().lower() in ("1", "true", "yes")
+
+
+def _load_resume_state():
+    """Load only a compatible checkpoint; never silently restart a requested resume."""
+    if not _resume_requested():
+        return None
+
+    progress = _read_json(PROGRESS_FILE, None)
+    checkpoint = _read_json(CHECKPOINT_FILE, {})
+
+    # If active files were overwritten by an accidental fresh run, recover the
+    # last successful unit from the durable copies created at each flush.
+    backup_progress = _read_json(LAST_GOOD_PROGRESS_FILE, None)
+    backup_checkpoint = _read_json(LAST_GOOD_CHECKPOINT_FILE, {})
+    active_completed = progress.get("completed_units", []) if isinstance(progress, dict) else []
+    embedded_progress = checkpoint.get("progress", {}) if isinstance(checkpoint, dict) else {}
+    embedded_completed = embedded_progress.get("completed_units", []) if isinstance(embedded_progress, dict) else []
+    backup_completed = backup_progress.get("completed_units", []) if isinstance(backup_progress, dict) else []
+
+    if (not active_completed) and isinstance(embedded_progress, dict) \
+            and embedded_progress.get("schema") == RUN_SCHEMA and embedded_completed:
+        progress = embedded_progress
+        print("[resume] active progress empty; recovered embedded checkpoint progress")
+    elif not isinstance(progress, dict) or progress.get("schema") != RUN_SCHEMA:
+        if isinstance(backup_progress, dict) and backup_progress.get("schema") == RUN_SCHEMA:
+            progress, checkpoint = backup_progress, backup_checkpoint
+            print("[resume] recovered last-good checkpoint backup")
+        else:
+            raise RuntimeError(
+                "[resume] NAFAS_RESUME=1 demandé mais aucun checkpoint compatible n'est disponible. "
+                "Pour commencer volontairement de zéro, utilisez set NAFAS_RESUME= puis relancez."
+            )
+    elif (not active_completed) and isinstance(backup_progress, dict) \
+            and backup_progress.get("schema") == RUN_SCHEMA and backup_completed:
+        # A fresh run may have overwritten the active progress with an empty
+        # list before the user requested Resume. Prefer the last-good progress.
+        progress, checkpoint = backup_progress, backup_checkpoint
+        print("[resume] active progress empty; recovered last-good completed units")
+
+    if not isinstance(checkpoint, dict) or checkpoint.get("schema") != RUN_SCHEMA:
+        backup_checkpoint = _read_json(LAST_GOOD_CHECKPOINT_FILE, {})
+        if isinstance(backup_checkpoint, dict) and backup_checkpoint.get("schema") == RUN_SCHEMA:
+            checkpoint = backup_checkpoint
+            print("[resume] recovered last-good checkpoint payload")
+        else:
+            raise RuntimeError(
+                "[resume] progress existe mais training_checkpoint n'est pas compatible. "
+                "Aucun redémarrage silencieux n'est effectué."
+            )
+
+    completed = progress.get("completed_units", [])
+    if not isinstance(completed, list):
+        raise RuntimeError("[resume] completed_units invalide; aucun redémarrage silencieux.")
+
+    return {
+        "progress": progress,
+        "training_metrics": _filter_allowed_rows(checkpoint.get("training_metrics", _read_json(os.path.join(SAVED, "training_summary.json"), []))),
+        "validation_metrics": _filter_allowed_rows(checkpoint.get("validation_metrics", _read_json(os.path.join(SAVED, "validation_summary.json"), []))),
+        "all_metrics": _filter_allowed_rows(checkpoint.get("all_metrics", _read_json(os.path.join(SAVED, "test_summary.json"), []))),
+        "pred_rows": checkpoint.get("pred_rows", []),
+        "dl_forecasts": checkpoint.get("dl_forecasts", {}),
+    }
+
+
+def _clear_local_model_artifacts():
+    """Supprime les artefacts de modèles d'un run precedent, jamais les poids Ensemble."""
+    prefixes = ("random_reg_", "xgboost_reg_", "gradient_reg_", "neural_reg_",
+                "bilstm_autoencoder_", "lstm_", "bilstm_", "cnn_", "attention_")
+    try:
+        for name in os.listdir(SAVED):
+            if not name.endswith((".pkl", ".h5", ".keras")):
+                continue
+            if "ensemble" in name.lower() or "weight" in name.lower():
+                continue
+            if name.startswith(prefixes):
+                os.remove(os.path.join(SAVED, name))
+    except Exception as exc:
+        print(f"[cleanup] local model artifacts skipped: {exc}")
+
+
+def _clear_local_run_summaries():
+    """Supprime uniquement les anciens resumes locaux, jamais les donnees ni les poids."""
+    for path in (PROGRESS_FILE, CHECKPOINT_FILE,
+                 os.path.join(SAVED, "training_summary.json"),
+                 os.path.join(SAVED, "validation_summary.json"),
+                 os.path.join(SAVED, "test_summary.json")):
+        try:
+            if os.path.exists(path):
+                os.remove(path)
+        except Exception as exc:
+            print(f"[cleanup] local summary skipped {path}: {exc}")
+
+
+def _write_progress(progress, current=None, status=None):
+    if current is not None:
+        progress["current"] = current
+    if status is not None:
+        progress["status"] = status
+    progress["updated_at"] = dt.datetime.now().isoformat(timespec="seconds")
+    _atomic_json(PROGRESS_FILE, progress)
+
+
+def _checkpoint_state(conn, training_metrics, validation_metrics, all_metrics,
+                      pred_rows, progress, dl_forecasts=None, flush_db=True):
+    """Persist les resultats reels a chaque checkpoint; les tables sont remplacees par ce run."""
+    _atomic_json(os.path.join(SAVED, "training_summary.json"), training_metrics)
+    _atomic_json(os.path.join(SAVED, "validation_summary.json"), validation_metrics)
+    _atomic_json(os.path.join(SAVED, "test_summary.json"), all_metrics)
+    checkpoint_payload = {
+        "schema": RUN_SCHEMA,
+        "training_metrics": training_metrics,
+        "validation_metrics": validation_metrics,
+        "all_metrics": all_metrics,
+        "pred_rows": pred_rows,
+        "dl_forecasts": dl_forecasts or {},
+        "progress": progress,
+    }
+    _atomic_json(CHECKPOINT_FILE, checkpoint_payload)
+    _atomic_json(LAST_GOOD_CHECKPOINT_FILE, checkpoint_payload)
+    _write_progress(progress)
+    _atomic_json(LAST_GOOD_PROGRESS_FILE, progress)
+    if flush_db and conn is not None:
+        try:
+            save_metrics_db(conn, all_metrics)
+            save_validation_metrics_db(conn, validation_metrics)
+            save_training_metrics_db(conn, training_metrics)
+            _save_predictions_db(conn, pred_rows)
+        except Exception as exc:
+            print(f"[checkpoint] DB flush skipped: {exc}")
 
 
 def save_metrics_db(conn, rows):
@@ -760,8 +911,8 @@ def save_pollutant_xai(conn):
 
 def main():
     print("=" * 60)
-    print("GABES-TATENAFAS v4.1 - training on REAL Open-Meteo data")
-    print("Source: table open_data | 7 villes | horaire | 2024-01-01 -> 2026-07-02")
+    print("GABES-TATENAFAS v6 - training on REAL Open-Meteo data with causal +24h enrichment")
+    print("Source: table open_data | 4 active cities | real hourly data | enriched causal +24h schema")
     print("Split chronologique : 70% train / 10% validation / 20% test")
     print("Selection uniquement sur validation ; test final jamais utilise pour choisir")
     print("=" * 60)
@@ -769,13 +920,32 @@ def main():
     save_spatial_overlap_summary(frames)
     save_data_drift_summary(frames)
     conn = db_config.try_connection()
-    clear_stale_model_outputs(conn)
-    all_metrics = []
-    validation_metrics = []
-    training_metrics = []
-    pred_rows = []
-    hyperparams = {}
-    dl_forecasts, dl_series, attn_records, attn_bounds = {}, None, None, None
+    resume_state = _load_resume_state()
+    if resume_state is not None:
+        progress = resume_state["progress"]
+        completed_units = set(progress.get("completed_units", []))
+        all_metrics = resume_state["all_metrics"]
+        validation_metrics = resume_state["validation_metrics"]
+        training_metrics = resume_state["training_metrics"]
+        pred_rows = resume_state["pred_rows"]
+        hyperparams = {}
+        print(f"[resume] compatible checkpoint loaded: {len(completed_units)} completed units")
+    else:
+        _clear_local_run_summaries()
+        _clear_local_model_artifacts()
+        clear_stale_model_outputs(conn)
+        progress = _new_progress(False)
+        completed_units = set()
+        all_metrics = []
+        validation_metrics = []
+        training_metrics = []
+        pred_rows = []
+        hyperparams = {}
+        _write_progress(progress)
+    if conn is not None and resume_state is not None:
+        print("[resume] existing DB outputs preserved until the next checkpoint flush")
+    dl_forecasts = resume_state.get("dl_forecasts", {}) if resume_state is not None else {}
+    dl_series, attn_records, attn_bounds = None, None, None
     zones_meta = {}
     if conn is not None:
         try:
@@ -809,12 +979,25 @@ def main():
             attn_records = records
             attn_bounds = (first_val, first_test)
 
+        # Build the expensive real feature matrix once per zone and reuse it
+        # for all horizons and both classical/DL branches.
+        try:
+            zone_feature_matrix = feature_engineering.build_feature_matrix(records)
+            print(f"  feature cache prepared once shape={zone_feature_matrix.shape}")
+        except Exception as exc:
+            raise RuntimeError(f"zone {zid}: causal feature construction failed: {exc}") from exc
+
         for h, step in HORIZON_STEPS.items():
-            X, y = build_xy(records, step)
+            unit_key = f"zone{zid}:{h}"
+            if unit_key in completed_units:
+                print(f"zone {zid} {h}: checkpoint already complete -> skipped")
+                continue
+            _write_progress(progress, current={"zone_id": zid, "horizon": h, "model": None, "stage": "preparing"})
+            X, y = build_xy(records, step, matrix=zone_feature_matrix)
             dl_matrix, dl_prepared = None, None
             if deep_models is not None and deep_models.available():
                 try:
-                    dl_matrix = deep_models.build_feature_matrix(records)
+                    dl_matrix = zone_feature_matrix
                     dl_prepared = deep_models.prepare_sequences(records, step, matrix=dl_matrix)
                     print(f"  {h}: DL cache prepared once shape={None if dl_prepared[0] is None else dl_prepared[0].shape}")
                 except Exception as exc:
@@ -842,6 +1025,7 @@ def main():
             train_preds, val_preds, val_models = {}, {}, {}
             val_rmses = {}
             for name, factory in factories:
+                _write_progress(progress, current={"zone_id": zid, "horizon": h, "model": name, "stage": "validation"})
                 try:
                     model = factory(Xtr, ytr)
                     ptrain = np.asarray(model.predict(Xtr), dtype=float)
@@ -864,21 +1048,22 @@ def main():
                 print(f"  {h}: aucun modele classique disponible")
                 continue
 
-            # Les poids de l'ensemble sont appris sur validation uniquement.
-            weights = {name: 1.0 / (val_rmses[name] + 1e-6) for name in val_preds}
-            weight_sum = sum(weights.values()) or 1.0
-            val_ensemble = sum(weights[name] / weight_sum * val_preds[name] for name in val_preds)
-            val_ensemble_rmse = float(np.sqrt(np.mean((yval - val_ensemble) ** 2)))
-            # L'ensemble reste calculable en interne, mais n'est pas un modèle
-            # affiché : le classement porte uniquement sur la liste autorisée.
-            selected_name = min(val_rmses, key=val_rmses.get)
-            selection_rmses = dict(val_rmses)
-            print(f"zone {zid} {h} selected by VALIDATION: {selected_name} validation RMSE={selection_rmses[selected_name]:.2f}")
+            # Keep classical validation scores now. The final selector is
+            # deliberately postponed until DL validation scores are available,
+            # so all seven allowed models compete on the same Validation slice.
+            classical_validation_rmses = dict(val_rmses)
+            selection_scores = dict(classical_validation_rmses)
+            dl_latest_preds, dl_test_rmses, dl_test_preds = {}, {}, {}
+
+            # Ensemble weights remain the existing internal fallback weights;
+            # they are not changed or exported as a deployment model.
+            weights = {name: 1.0 / (score + 1e-6) for name, score in classical_validation_rmses.items()}
 
             # Refit de chaque modele sur train+validation ; test final indépendant.
             final_models, final_preds, final_lat = {}, {}, {}
             Xfit, yfit = Xtv, ytv
             for name, factory in factories:
+                _write_progress(progress, current={"zone_id": zid, "horizon": h, "model": name, "stage": "test_refit"})
                 try:
                     model = factory(Xfit, yfit)
                     ptest = np.asarray(model.predict(Xtest), dtype=float)
@@ -903,57 +1088,33 @@ def main():
             test_ensemble = sum(available_weights[name] / available_weight_sum * final_preds[name]
                                 for name in final_preds if name in available_weights)
             ensemble_latency = round(sum(final_lat.values()), 3)
-            # Les poids et l'ensemble restent calcules en interne pour préserver
-            # le comportement existant, mais ils ne sont pas exportes comme modèles.
-            print(f"zone {zid} {h}: ensemble interne calcule, classement limite aux modeles autorises")
+            print(f"zone {zid} {h}: internal ensemble retained; all-model selection pending")
 
-            # Le modele affiche est celui choisi sur validation ; son test est seulement reporte.
-            latest_preds = {name: float(model.predict(latest_feature(records, step))[0])
-                            for name, model in final_models.items()}
-            latest_available = {name: weights[name] for name in final_models if name in weights}
-            latest_weight_sum = sum(latest_available.values()) or 1.0
-            latest_ensemble = float(sum(latest_available[name] / latest_weight_sum * latest_preds[name]
-                                        for name in final_models if name in latest_available))
-            # L'ensemble reste un fallback interne calculé avec les poids de validation.
-            # Il n'est pas exporté comme modèle affiché ni persisté dans model_predictions.
-            latest_value = latest_preds.get(selected_name, latest_ensemble)
-            level = "safe" if latest_value <= 50 else ("warning" if latest_value <= 100 else "critical")
-            selected_test_rmse = (float(np.sqrt(np.mean((ytest - final_preds[selected_name]) ** 2)))
-                                  if selected_name in final_preds else float(np.sqrt(np.mean((ytest - test_ensemble) ** 2))))
-            dl_forecasts.setdefault(zid, {})[h] = {
-                "predicted": int(round(latest_value)), "level": level,
-                "conf": round(float(max(0.0, min(1.0, 1.0 - selection_rmses[selected_name] / (np.std(yval) + 1e-6)))), 2),
-                "model": selected_name, "validation_rmse": round(selection_rmses[selected_name], 3),
-                "test_rmse": round(selected_test_rmse, 3),
-            }
-            print(f"zone {zid} {h} deployment={selected_name} (selection validation only) | test RMSE={selected_test_rmse:.2f}")
+            # Deep models use the same temporal boundaries and expose their
+            # validation/test summaries before deployment is selected.
 
-            if h == "1h" and len(ytest) >= 4:
-                selected_test = final_preds[selected_name] if selected_name in final_preds else test_ensemble
-                kk = min(72, len(selected_test))
-                cand = {"labels": [f"H{i}" for i in range(kk)],
-                        "actual": [round(float(v), 1) for v in ytest[-kk:]],
-                        "predicted": [round(float(v), 1) for v in selected_test[-kk:]],
-                        "zone": zid, "model": selected_name,
-                        "rmse": round(selected_test_rmse, 2)}
-                if dl_series is None or len(cand["actual"]) > len(dl_series.get("actual", [])):
-                    dl_series = cand
-
-            # Deep models utilisent les memes frontieres 70/10/20 et evaluent validation/test.
             if deep_models is not None and deep_models.available():
                 for dl_name, dl_fn in (("LSTM", deep_models.train_lstm),
                                        ("BiLSTM Simple", deep_models.train_bilstm),
                                        ("BiLSTM+MultiHead Attn", deep_models.train_bilstm_attention),
                                        ("CNN+AE", deep_models.train_cnn_autoencoder)):
+                    _write_progress(progress, current={"zone_id": zid, "horizon": h, "model": dl_name, "stage": "deep_fit"})
                     try:
-                        dm = dl_fn(records, step, first_val, first_test, prepared=dl_prepared)
+                        dm = dl_fn(records, step, first_val, first_test, prepared=dl_prepared, matrix=dl_matrix)
                     except Exception as exc:
                         dm = None
                         print(f"  {dl_name} skipped: {exc}")
                     finally:
                         release_dl_memory()
                     if dm:
-                        all_metrics.append({"model": dl_name, "city_id": zid, "horizon": h, **dm})
+                        if dm.get("val_rmse") is not None:
+                            selection_scores[dl_name] = float(dm["val_rmse"])
+                        if dm.get("rmse") is not None:
+                            dl_test_rmses[dl_name] = float(dm["rmse"])
+                        if dm.get("latest_pred") is not None:
+                            dl_latest_preds[dl_name] = float(dm["latest_pred"])
+                        dl_test_preds[dl_name] = np.asarray(dm.get("y_pred", []), dtype=float)
+                        all_metrics.append({"model": dl_name, "city_id": zid, "horizon": h, "selection_rule": "all_seven_validation_only", **dm})
                         if dm.get("train_rmse") is not None:
                             training_metrics.append({"model": dl_name, "city_id": zid, "horizon": h,
                                                      "mae": dm.get("train_mae"), "rmse": dm.get("train_rmse"),
@@ -978,6 +1139,7 @@ def main():
                         print(f"zone {zid} {h} {dl_name}: TRAIN RMSE={dm.get('train_rmse', float('nan')):.2f} | TEST RMSE={dm['rmse']:.2f} R2={dm['r2']:.3f} F1={dm['f1']:.3f} | VAL RMSE={dm.get('val_rmse', float('nan')):.2f}")
 
             if bilstm_autoencoder is not None and bilstm_autoencoder.available():
+                _write_progress(progress, current={"zone_id": zid, "horizon": h, "model": "BiLSTM+AE", "stage": "deep_fit"})
                 try:
                     dm = bilstm_autoencoder.train_bilstm_ae(records, step, first_val, first_test,
                                                              zone_id=zid, saved_dir=SAVED,
@@ -988,7 +1150,14 @@ def main():
                 finally:
                     release_dl_memory()
                 if dm:
-                    all_metrics.append({"model": "BiLSTM+AE", "city_id": zid, "horizon": h, **dm})
+                    if dm.get("val_rmse") is not None:
+                        selection_scores["BiLSTM+AE"] = float(dm["val_rmse"])
+                    if dm.get("rmse") is not None:
+                        dl_test_rmses["BiLSTM+AE"] = float(dm["rmse"])
+                    if dm.get("latest_pred") is not None:
+                        dl_latest_preds["BiLSTM+AE"] = float(dm["latest_pred"])
+                    dl_test_preds["BiLSTM+AE"] = np.asarray(dm.get("y_pred", []), dtype=float)
+                    all_metrics.append({"model": "BiLSTM+AE", "city_id": zid, "horizon": h, "selection_rule": "all_seven_validation_only", **dm})
                     if dm.get("train_rmse") is not None:
                         training_metrics.append({"model": "BiLSTM+AE", "city_id": zid, "horizon": h,
                                                  "mae": dm.get("train_mae"), "rmse": dm.get("train_rmse"),
@@ -1012,7 +1181,64 @@ def main():
                         pass
                     print(f"zone {zid} {h} BiLSTM+AE: TRAIN RMSE={dm.get('train_rmse', float('nan')):.2f} | TEST RMSE={dm['rmse']:.2f} R2={dm['r2']:.3f} F1={dm['f1']:.3f} | VAL RMSE={dm.get('val_rmse', float('nan')):.2f}")
 
+            # Unified deployment selection: all seven allowed models must have
+            # a Validation score, a final Test score, and a latest prediction.
+            latest_preds = {
+                name: float(model.predict(latest_feature(records, step))[0])
+                for name, model in final_models.items()
+            }
+            latest_preds.update(dl_latest_preds)
+            test_scores = {
+                **{
+                    name: float(np.sqrt(np.mean((ytest - pred) ** 2)))
+                    for name, pred in final_preds.items()
+                },
+                **dl_test_rmses,
+            }
+            decision = select_deployment_model(selection_scores, test_scores, latest_preds)
+            if decision is None:
+                print(f"  {h}: no model has complete validation/test/latest outputs")
+                continue
+            selected_name = decision["model"]
+            selected_val_rmse = decision["validation_rmse"]
+            selected_test_rmse = decision["test_rmse"]
+            latest_value = decision["latest_pred"]
+            level = "safe" if latest_value <= 50 else ("warning" if latest_value <= 100 else "critical")
+            confidence = max(0.0, min(1.0, 1.0 - selected_val_rmse / (np.std(yval) + 1e-6)))
+            dl_forecasts.setdefault(zid, {})[h] = {
+                "predicted": int(round(latest_value)), "level": level,
+                "conf": round(float(confidence), 2), "model": selected_name,
+                "validation_rmse": round(selected_val_rmse, 3),
+                "test_rmse": round(selected_test_rmse, 3),
+                "eligible_models": decision["eligible_models"],
+                "selection_rule": "all_seven_models_validation_only",
+            }
+            print(
+                f"zone {zid} {h} selected by VALIDATION among {len(decision['eligible_models'])} models: "
+                f"{selected_name} validation RMSE={selected_val_rmse:.2f} | "
+                f"TEST RMSE={selected_test_rmse:.2f}"
+            )
 
+            if h == "1h" and len(ytest) >= 4:
+                if selected_name in final_preds:
+                    selected_test = final_preds[selected_name]
+                else:
+                    selected_test = dl_test_preds.get(selected_name, np.asarray([]))
+                kk = min(72, len(selected_test))
+                cand = {"labels": [f"H{i}" for i in range(kk)],
+                        "actual": [round(float(v), 1) for v in ytest[-kk:]],
+                        "predicted": [round(float(v), 1) for v in selected_test[-kk:]],
+                        "zone": zid, "model": selected_name,
+                        "rmse": round(selected_test_rmse, 2)}
+                if dl_series is None or len(cand["actual"]) > len(dl_series.get("actual", [])):
+                    dl_series = cand
+
+            completed_units.add(unit_key)
+            progress["completed_units"] = sorted(completed_units)
+            _checkpoint_state(conn, training_metrics, validation_metrics, all_metrics,
+                              pred_rows, progress, dl_forecasts=dl_forecasts)
+            total_units = len(frames) * len(HORIZON_STEPS)
+            print(f"[checkpoint] saved {unit_key}; completed={len(completed_units)}/{total_units}")
             del dl_prepared, dl_matrix
             gc.collect()
 
@@ -1071,6 +1297,8 @@ def main():
     if conn:
         conn.close()
     print("=" * 60)
+    progress["completed_units"] = sorted(completed_units)
+    _write_progress(progress, current=None, status="completed")
     print(f"DONE. {len(training_metrics)} train rows, {len(validation_metrics)} validation rows, {len(all_metrics)} test rows.")
     print(f"Models in {SAVED}/; train summary in training_summary.json; validation summary in validation_summary.json; test summary in test_summary.json")
     print("Source: open_data (Open-Meteo/CAMS) - 0 ligne synthetique")

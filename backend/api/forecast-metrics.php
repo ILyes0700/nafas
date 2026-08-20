@@ -28,6 +28,9 @@ try {
     }
 
     $zone = isset($_GET['zone_id']) ? max(0, (int)$_GET['zone_id']) : 0;
+    $allowedZoneIds = ['1', '2', '3', '4'];
+    if ($zone > 0 && !in_array((string)$zone, $allowedZoneIds, true)) $zone = -1;
+    $allowedZoneSql = "'1','2','3','4'";
     $horizon = (string)($_GET['horizon'] ?? '');
     if ($horizon !== '' && !in_array($horizon, ['1h', '6h', '24h'], true)) $horizon = '';
 
@@ -35,7 +38,8 @@ try {
     if (ml_table_exists($pdo, 'model_performance')) {
         $where = [];
         $params = [];
-        if ($zone > 0) { $where[] = 'city_id = ?'; $params[] = (string)$zone; }
+        $where[] = "city_id IN ($allowedZoneSql)";
+        if ($zone !== 0) { $where[] = 'city_id = ?'; $params[] = (string)$zone; }
         if ($horizon !== '') { $where[] = 'horizon = ?'; $params[] = $horizon; }
         $sql = "SELECT model_name, city_id AS zone_id, horizon, mae, rmse, mape,
                        r_squared AS r2, smape, NULL AS sample_size,
@@ -51,7 +55,8 @@ try {
     if (!$rows && ml_table_exists($pdo, 'forecast_metrics')) {
         $where = [];
         $params = [];
-        if ($zone > 0) { $where[] = 'zone_id = ?'; $params[] = $zone; }
+        $where[] = 'zone_id IN (1,2,3,4)';
+        if ($zone !== 0) { $where[] = 'zone_id = ?'; $params[] = $zone; }
         $sql = 'SELECT model_name, zone_id, NULL AS horizon, mae, rmse, mape, r2, smape, sample_size, trained_at FROM forecast_metrics';
         if ($where) $sql .= ' WHERE ' . implode(' AND ', $where);
         $sql .= ' ORDER BY trained_at DESC LIMIT 500';

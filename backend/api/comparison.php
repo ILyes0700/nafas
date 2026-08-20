@@ -46,6 +46,7 @@ try {
     $pdo = db();
     $allowed = cmp_allowed_models();
     $marks = implode(',', array_fill(0, count($allowed), '?'));
+    $activeZoneSql = "'1','2','3','4'";
 
     $st = $pdo->prepare(
         "SELECT model_name,
@@ -55,14 +56,15 @@ try {
                 AVG(smape) smape, AVG(r_squared) r2, AVG(auc_roc) auc,
                 AVG(avg_latency_ms) latency, COUNT(*) zones
          FROM model_performance
-         WHERE horizon = '1h' AND model_name IN ({$marks})
+         WHERE city_id IN ({$activeZoneSql})
+           AND horizon = '1h' AND model_name IN ({$marks})
          GROUP BY model_name
          ORDER BY AVG(rmse) ASC"
     );
     $st->execute($allowed);
     $rows = $st->fetchAll(PDO::FETCH_ASSOC);
     if (!$rows) {
-        cmp_empty("Aucun résultat réel n'est disponible. Lancez l'entraînement sur les sept zones.");
+        cmp_empty("Aucun résultat réel n'est disponible pour les quatre zones actives. Lancez l'entraînement.");
     }
 
     $master = [];
@@ -95,7 +97,8 @@ try {
     $hz = $pdo->prepare(
         "SELECT model_name, horizon, AVG(rmse) rmse, AVG(f1_macro) f1, AVG(auc_roc) auc
          FROM model_performance
-         WHERE model_name IN ({$marks}) AND horizon IN ('1h','6h','24h')
+         WHERE city_id IN ({$activeZoneSql})
+           AND model_name IN ({$marks}) AND horizon IN ('1h','6h','24h')
          GROUP BY model_name, horizon
          ORDER BY horizon, AVG(rmse) ASC"
     );
@@ -134,7 +137,8 @@ try {
         $sig = $pdo->prepare(
             "SELECT model_name, AVG(wilcoxon_pvalue) p
              FROM model_performance
-             WHERE model_name IN ({$marks}) AND wilcoxon_pvalue IS NOT NULL
+             WHERE city_id IN ({$activeZoneSql})
+               AND model_name IN ({$marks}) AND wilcoxon_pvalue IS NOT NULL
              GROUP BY model_name ORDER BY p ASC"
         );
         $sig->execute($allowed);
@@ -171,7 +175,7 @@ try {
         'name' => $best['model'],
         'vs_baseline' => ['rmse' => null, 'f1' => null, 'auc' => null],
         'wilcoxon_p' => null,
-        'components' => ['Résultat TEST réel', 'Sélection et classement indépendants des autres modèles', 'Données des sept zones'],
+        'components' => ['Résultat TEST réel', 'Sélection et classement indépendants des autres modèles', 'Données des quatre zones actives'],
     ] : null;
 
     json_response([
@@ -192,7 +196,7 @@ try {
         'best' => $bestPayload,
         'allowed_models' => $allowed,
         'protocol' => '70% train / 10% validation / 20% test',
-        'data_source' => ['table' => 'open_data', 'zones' => 7, 'synthetic' => false],
+        'data_source' => ['table' => 'open_data', 'zones' => 4, 'excluded_from_training' => ['Chenini', 'El_Bled', 'Matmata'], 'synthetic' => false],
     ]);
 } catch (Throwable $e) {
     json_response([

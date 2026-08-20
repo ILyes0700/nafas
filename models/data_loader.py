@@ -1,63 +1,40 @@
-"""models/data_loader.py — v4.0 (donnees reelles Open-Meteo / CAMS uniquement)
+"""Real Open-Meteo/CAMS loader for the Nafass ML pipeline.
 
-CHANGEMENT MAJEUR v4.0
-----------------------
-Ce module ne genere PLUS AUCUNE donnee. Avant, il :
-  - interpolait ~150 points reels sur une grille horaire (_interp_hourly),
-  - dupliquait la serie par tuilage + bruit gaussien jusqu'a 2016 lignes
-    (_densify, TARGET_LEN),
-  - fabriquait des zones entierement synthetiques (_synthetic_zone_frame),
-  - concatenait les lignes CGAN de api_readings_augmented (load_api_augmented).
+The loader never generates rows or values. It reads open_data, keeps the four
+active cities, performs only short internal-gap interpolation (<=3 hours), and
+returns a strict chronological 70/10/20 split contract.
 
-La table `open_data` contient desormais ~130 000 lignes horaires REELLES
-(Open-Meteo / CAMS Europe + ERA5) pour 7 villes, du 2024-01-01 au 2026-07-02.
-Toute generation est donc inutile ET nuisible : elle injectait de
-l'autocorrelation artificielle qui gonflait les R2.
-
-SOURCE UNIQUE : table `open_data`, jointe a `zones` via `zones.city_key`.
-
-DECISION SUR LES FEATURES (imposee par la section 3.3 du prompt)
-----------------------------------------------------------------
-`uv_index`, `forecast_3h` et `forecast_6h` n'existent pas dans open_data et ne
-sont PAS reconstituables honnetement -> ils sont RETIRES du vecteur.
-En compensation, open_data expose 5 variables reelles que l'ancien pipeline
-n'avait pas : o3, co, dust, precipitation, cloud_cover -> elles sont AJOUTEES.
-Bilan : les modèles classiques et profonds partagent désormais 35 features. Voir FEATURE_NAMES dans train_all.py et deep_models.py.
-
-SPLIT (imposee par la section 3.6)
-----------------------------------
-Split chronologique strict 70/10/20 par ville, sur la serie reelle triee par
-temps. Train = 70% anciens, validation = 10% suivants, test = 20% recents.
-Aucun marqueur _synth / _holdout ne subsiste. Cette règle s'applique aux sept modèles
-autorisés : RF, XGBoost+Fuzzy, LSTM, BiLSTM Simple, BiLSTM+Attention, BiLSTM+AE et CNN+AE.
+Optional enrichment columns are read when the SQL migration and the real
+Open-Meteo enrichment script have been executed. Missing optional columns are
+reported explicitly; they are not silently confused with measurements.
 """
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
+import os
+from typing import Dict, List
 
 import pandas as pd
 
-try:  # import en package (python -m models.train_all)
+try:
     from . import db_config
-except ImportError:  # import en script direct (python models/data_loader.py)
+except ImportError:  # pragma: no cover
     import db_config  # type: ignore
-
-
-# --------------------------------------------------------------------------
-# Configuration
-# --------------------------------------------------------------------------
 
 TRAIN_RATIO = 0.70
 VALIDATION_RATIO = 0.10
 TEST_RATIO = 0.20
 
-# Nombre max d'heures consecutives manquantes que l'on accepte de combler par
-# interpolation lineaire. Au-dela, on laisse le NaN : c'est un vrai trou de
-# donnees, pas quelque chose que l'on a le droit d'inventer.
+ALLOWED_CITY_KEYS = (
+    "Gabes_ville",
+    "Ghannouche",
+    "Chott_Salem",
+    "Teboulbou",
+)
+
 MAX_INTERP_GAP = 3
 
-# open_data (colonnes Open-Meteo) -> cles internes attendues par _feature_row()
-COLUMN_MAP = {
+# open_data columns -> internal feature keys
+BASE_COLUMN_MAP = {
     "us_aqi": "aqi",
     "pm2_5": "pm25",
     "pm10": "pm10",
@@ -75,141 +52,150 @@ COLUMN_MAP = {
     "cloud_cover": "cloud_cover",
 }
 
-# Colonnes numeriques sur lesquelles l'interpolation courte est autorisee.
+# These columns are populated by the real Open-Meteo enrichment script.
+OPTIONAL_COLUMN_MAP = {
+    "dew_point_2m": "dew_point",
+    "cloud_cover_low": "cloud_cover_low",
+    "vapour_pressure_deficit": "vapour_pressure_deficit",
+    "wind_gusts_10m": "wind_gusts_10m",
+    "boundary_layer_height": "boundary_layer_height",
+    "wind_speed_80m": "wind_speed_80m",
+    "wind_direction_80m": "wind_direction_80m",
+}
+# These are the columns consumed by the v6 feature schema. PBLH is kept as a
+# nullable future column because the tested historical source returned a large
+# contiguous missing block; it is not silently imputed or used by v6.
+REQUIRED_ENRICHMENT_COLUMNS = (
+    "dew_point_2m", "cloud_cover_low", "vapour_pressure_deficit",
+    "wind_gusts_10m", "wind_speed_80m", "wind_direction_80m",
+)
+
+COLUMN_MAP = {**BASE_COLUMN_MAP, **OPTIONAL_COLUMN_MAP}
 NUMERIC_KEYS = list(COLUMN_MAP.values())
 
 
-# --------------------------------------------------------------------------
-# Connexion
-# --------------------------------------------------------------------------
-
 def connect():
-    """Connexion MySQL. db_config est inchange (section 3.1 du prompt)."""
     return db_config.get_connection()
 
 
-def load_zones(conn) -> List[dict]:
-    """Retourne les zones possedant une city_key, donc joignables a open_data.
+def _open_data_columns(conn) -> set[str]:
+    cur = conn.cursor()
+    cur.execute("SHOW COLUMNS FROM open_data")
+    cols = {str(row[0]) for row in cur.fetchall()}
+    cur.close()
+    return cols
 
-    Une zone sans city_key est une zone orpheline (reliquat de l'ancien seed) :
-    on la saute explicitement plutot que de deviner une correspondance sur le
-    nom d'affichage, qui etait justement la source de bugs avant la migration.
-    """
+
+def load_zones(conn) -> List[dict]:
     cur = conn.cursor(dictionary=True)
+    marks = ",".join(["%s"] * len(ALLOWED_CITY_KEYS))
     cur.execute(
-        "SELECT id, name, city_key, category "
-        "FROM zones "
+        "SELECT id, name, city_key, category, lat, lng FROM zones "
         "WHERE city_key IS NOT NULL AND city_key <> '' "
-        "ORDER BY id ASC"
+        f"AND city_key IN ({marks}) ORDER BY id ASC",
+        ALLOWED_CITY_KEYS,
     )
     rows = cur.fetchall()
     cur.close()
     return rows
 
 
-# --------------------------------------------------------------------------
-# Chargement d'une ville
-# --------------------------------------------------------------------------
-
 def load_city_series(conn, city_key: str) -> pd.DataFrame:
-    """Charge la serie horaire reelle complete d'une ville, triee par temps."""
-    cur = conn.cursor(dictionary=True)
-    cur.execute(
-        "SELECT time, " + ", ".join(COLUMN_MAP.keys()) + " "
-        "FROM open_data WHERE city = %s ORDER BY time ASC",
-        (city_key,),
+    available = _open_data_columns(conn)
+    required = {"city", "time", *BASE_COLUMN_MAP.keys()}
+    missing_required = sorted(required - available)
+    if missing_required:
+        raise RuntimeError(
+            "open_data columns are missing: " + ", ".join(missing_required)
+        )
+    require_enrichment = os.environ.get("NAFAS_REQUIRE_ENRICHMENT", "1").lower() not in ("0", "false", "no")
+    missing_enrichment = sorted(set(REQUIRED_ENRICHMENT_COLUMNS) - available)
+    if require_enrichment and missing_enrichment:
+        raise RuntimeError(
+            "Enriched +24h columns are missing: " + ", ".join(missing_enrichment)
+            + ". Run source/backend/sql/plus24_enrichment.sql and "
+              "python -m models.enrich_openmeteo_weather --apply, or set "
+              "NAFAS_REQUIRE_ENRICHMENT=0 only for the old baseline."
+        )
+
+    selected = ["time"] + [name for name in COLUMN_MAP if name in available]
+    query = (
+        "SELECT " + ", ".join(f"`{name}`" for name in selected) +
+        " FROM open_data WHERE city = %s ORDER BY time ASC"
     )
+    cur = conn.cursor(dictionary=True)
+    cur.execute(query, (city_key,))
     rows = cur.fetchall()
     cur.close()
-
     if not rows:
         return pd.DataFrame()
 
-    df = pd.DataFrame(rows).rename(columns=COLUMN_MAP)
-    df["ts"] = pd.to_datetime(df["time"])
+    df = pd.DataFrame(rows).rename(columns={k: v for k, v in COLUMN_MAP.items() if k in selected})
+    df["ts"] = pd.to_datetime(df["time"], errors="coerce")
     df = df.drop(columns=["time"]).sort_values("ts").reset_index(drop=True)
 
-    for key in NUMERIC_KEYS:
-        if key in df.columns:
-            df[key] = pd.to_numeric(df[key], errors="coerce")
-
-    # Section 3.4 : interpolation lineaire STRICTEMENT limitee aux vrais trous
-    # internes de 3 heures maximum. limit_area="inside" empeche pandas de
-    # prolonger la serie a ses extremites (ce serait de l'extrapolation).
-    present = [k for k in NUMERIC_KEYS if k in df.columns]
-    df[present] = df[present].interpolate(
-        method="linear", limit=MAX_INTERP_GAP, limit_area="inside"
-    )
-
-    # L'AQI est la cible : une ligne sans cible est inutilisable.
+    present_numeric = [key for key in NUMERIC_KEYS if key in df.columns]
+    for key in present_numeric:
+        df[key] = pd.to_numeric(df[key], errors="coerce")
+    if present_numeric:
+        df[present_numeric] = df[present_numeric].interpolate(
+            method="linear", limit=MAX_INTERP_GAP, limit_area="inside"
+        )
     df = df.dropna(subset=["aqi"]).reset_index(drop=True)
+    if require_enrichment:
+        required_internal = [OPTIONAL_COLUMN_MAP[k] for k in REQUIRED_ENRICHMENT_COLUMNS]
+        residual = {key: int(df[key].isna().sum()) for key in required_internal if key in df.columns and df[key].isna().any()}
+        if residual:
+            raise RuntimeError(
+                f"Real enrichment has missing values for {city_key}: {residual}. "
+                "Do not fill them with zero; rerun the real Open-Meteo enrichment."
+            )
+
+    optional_present = [k for k in OPTIONAL_COLUMN_MAP.values() if k in df.columns]
+    print(
+        f"[data_loader] {city_key}: {len(df)} real rows; "
+        f"optional enrichment={len(optional_present)}/{len(OPTIONAL_COLUMN_MAP)} "
+        f"({', '.join(optional_present) if optional_present else 'none'})"
+    )
     return df
 
 
-# --------------------------------------------------------------------------
-# Split chronologique
-# --------------------------------------------------------------------------
-
 def split_frame(df: pd.DataFrame, train_ratio: float = TRAIN_RATIO,
                 validation_ratio: float = VALIDATION_RATIO):
-    """Split chronologique 70/10/20, sans melange.
-
-    Retourne explicitement train, validation et test. Les anciennes fonctions
-    qui ne consommaient que deux partitions doivent etre adaptees plutot que de
-    reutiliser le test pour choisir un modele.
-    """
     n = len(df)
     train_end = int(n * train_ratio)
-    # تجميع عدد صفوف train وvalidation يمنع 0.70 + 0.10 من التحول إلى
-    # 0.799999 بسبب التقريب الثنائي.
     validation_end = train_end + int(n * validation_ratio)
-    return (df.iloc[:train_end].copy(),
-            df.iloc[train_end:validation_end].copy(),
-            df.iloc[validation_end:].copy())
+    return (
+        df.iloc[:train_end].copy(),
+        df.iloc[train_end:validation_end].copy(),
+        df.iloc[validation_end:].copy(),
+    )
 
 
 def split_index(df: pd.DataFrame, train_ratio: float = TRAIN_RATIO,
                 validation_ratio: float = VALIDATION_RATIO):
-    """Retourne les deux frontieres train/validation et validation/test."""
     n = len(df)
     train_end = int(n * train_ratio)
     validation_end = train_end + int(n * validation_ratio)
     return train_end, validation_end
 
 
-# --------------------------------------------------------------------------
-# Point d'entree du pipeline
-# --------------------------------------------------------------------------
-
 def build_frames() -> Dict[int, pd.DataFrame]:
-    """Retourne {zone_id: DataFrame reel trie par temps} (section 3.7).
-
-    Contrat identique a l'ancienne version pour que train_all.py n'ait pas a
-    changer d'interface, mais les DataFrames ne contiennent plus que du reel
-    (~21 000 lignes par ville au lieu de 2016 lignes majoritairement fausses).
-    """
     conn = connect()
     frames: Dict[int, pd.DataFrame] = {}
     try:
         for zone in load_zones(conn):
             df = load_city_series(conn, zone["city_key"])
             if df.empty:
-                print(
-                    "[data_loader] zone %s (%s) : AUCUNE ligne dans open_data "
-                    "-> ignoree" % (zone["id"], zone["city_key"])
-                )
+                print(f"[data_loader] zone {zone['id']} ({zone['city_key']}): no rows -> skipped")
                 continue
             if len(df) < 200:
-                print(
-                    "[data_loader] zone %s (%s) : seulement %d lignes -> ignoree"
-                    % (zone["id"], zone["city_key"], len(df))
-                )
+                print(f"[data_loader] zone {zone['id']} ({zone['city_key']}): only {len(df)} rows -> skipped")
                 continue
             train_end, validation_end = split_index(df)
             print(
-                "[data_loader] zone %s %-14s %6d lignes reelles | "
-                "train %d (%s -> %s) | validation %d (%s -> %s) | "
-                "test %d (%s -> %s)"
+                "[data_loader] zone %s %-14s %6d real rows | train %d (%s -> %s) | "
+                "validation %d (%s -> %s) | test %d (%s -> %s)"
                 % (
                     zone["id"], zone["city_key"], len(df),
                     train_end, df["ts"].iloc[0].date(), df["ts"].iloc[train_end - 1].date(),
@@ -223,15 +209,12 @@ def build_frames() -> Dict[int, pd.DataFrame]:
 
     if not frames:
         raise RuntimeError(
-            "Aucune zone exploitable. Verifiez que migration_open_data.sql a ete "
-            "execute (colonne zones.city_key remplie) et que le CSV a bien ete "
-            "importe dans open_data."
+            "No usable zones. Check WAMP/MySQL, zones.city_key, and the open_data import."
         )
     return frames
 
 
 def records_for_zone(df: pd.DataFrame) -> List[dict]:
-    """DataFrame -> liste de dicts, format attendu par les trainers."""
     return df.to_dict("records")
 
 

@@ -129,6 +129,7 @@ try {
         'BiLSTM+MultiHead Attn', 'BiLSTM+AE', 'CNN+AE'
     ];
     $marks = implode(',', array_fill(0, count($allowedModels), '?'));
+    $activeZoneSql = "'1','2','3','4'";
     $st = $pdo->prepare(
         "SELECT model_name, AVG(accuracy) acc, AVG(precision_macro) prec,
                 AVG(recall_macro) rec, AVG(f1_macro) f1, AVG(mae) mae,
@@ -136,7 +137,8 @@ try {
                 AVG(r_squared) r2, AVG(auc_roc) auc, AVG(avg_latency_ms) latency,
                 COUNT(*) folds
          FROM model_performance
-         WHERE horizon = ? AND model_name IN ({$marks})
+         WHERE city_id IN ({$activeZoneSql})
+           AND horizon = ? AND model_name IN ({$marks})
          GROUP BY model_name ORDER BY AVG(rmse) ASC"
     );
     $st->execute(array_merge([$horizon], $allowedModels));
@@ -158,12 +160,49 @@ try {
         ];
     }
 
-    $cv = ['f1_mean' => null, 'f1_std' => null, 'rmse_mean' => null, 'rmse_std' => null, 'folds' => 0];
+    $selection = [
+        'rule' => 'validation_only',
+        'model' => (string)$models[0]['model'],
+        'validation_rmse' => null,
+        'test_is_report_only' => true,
+    ];
     $bestModel = (string)$models[0]['model'];
+    if (ml_api_table_exists($pdo, 'model_validation_performance')) {
+        $vst = $pdo->prepare(
+            "SELECT model_name, AVG(rmse) validation_rmse, AVG(r_squared) validation_r2,
+                    COUNT(*) folds
+             FROM model_validation_performance
+             WHERE city_id IN ({$activeZoneSql}) AND horizon = ?
+               AND model_name IN ({$marks})
+             GROUP BY model_name ORDER BY AVG(rmse) ASC"
+        );
+        $vst->execute(array_merge([$horizon], $allowedModels));
+        $vrows = $vst->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($vrows as $vrow) {
+            $candidate = (string)$vrow['model_name'];
+            $known = false;
+            foreach ($models as $modelRow) {
+                if ($modelRow['model'] === $candidate) { $known = true; break; }
+            }
+            if (!$known) continue;
+            $bestModel = $candidate;
+            $selection = [
+                'rule' => 'validation_only',
+                'model' => $candidate,
+                'validation_rmse' => $vrow['validation_rmse'] === null ? null : round((float)$vrow['validation_rmse'], 3),
+                'validation_r2' => $vrow['validation_r2'] === null ? null : round((float)$vrow['validation_r2'], 3),
+                'validation_folds' => (int)$vrow['folds'],
+                'test_is_report_only' => true,
+            ];
+            break;
+        }
+    }
+    $cv = ['f1_mean' => null, 'f1_std' => null, 'rmse_mean' => null, 'rmse_std' => null, 'folds' => 0];
     $cvst = $pdo->prepare(
         "SELECT AVG(f1_macro) f1_mean, STDDEV_POP(f1_macro) f1_std,
                 AVG(rmse) rmse_mean, STDDEV_POP(rmse) rmse_std, COUNT(*) folds
-         FROM model_performance WHERE horizon = ? AND model_name = ?"
+         FROM model_performance
+         WHERE city_id IN ({$activeZoneSql}) AND horizon = ? AND model_name = ?"
     );
     $cvst->execute([$horizon, $bestModel]);
     $cvrow = $cvst->fetch(PDO::FETCH_ASSOC);
@@ -209,7 +248,8 @@ try {
     if (ml_api_table_exists($pdo, 'model_predictions')) {
         $pr = $pdo->prepare(
             "SELECT predicted_aqi, actual_aqi FROM model_predictions
-             WHERE horizon = ? AND model_name = ?
+             WHERE city_id IN ({$activeZoneSql})
+               AND horizon = ? AND model_name = ?
                AND predicted_aqi IS NOT NULL AND actual_aqi IS NOT NULL
              ORDER BY timestamp ASC LIMIT 20000"
         );
@@ -227,6 +267,7 @@ try {
         'horizon' => $horizon,
         'message' => 'Résultats réels issus de la base et du pipeline d’entraînement.',
         'models' => $models,
+        'selection' => $selection,
         'roc' => ['classes' => $rocClasses, 'macro' => null],
         'shap' => $shap,
         'pdp' => $pdp,
@@ -240,7 +281,7 @@ try {
         'cv' => $cv,
         'data_source' => [
             'name' => 'Open-Meteo Air Quality (CAMS Europe) + ERA5',
-            'table' => 'open_data', 'cities' => 7,
+            'table' => 'open_data', 'cities' => 4,
             'period' => '2024-01-01 → 2026-07-02', 'grain' => 'horaire',
             'protocol' => 'split chronologique 70/10/20', 'synthetic' => false,
         ],

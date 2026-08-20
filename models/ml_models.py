@@ -16,16 +16,13 @@ from sklearn.metrics import (mean_absolute_error, mean_squared_error, r2_score,
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.preprocessing import label_binarize
 
-FEATURE_NAMES = [
-    "aqi_current",
-    *(f"aqi_lag_{k}" for k in (1, 2, 3, 4, 5, 6, 7, 24, 168)),
-    "aqi_delta_1h", "aqi_delta_6h", "aqi_mean_6h", "aqi_mean_24h", "aqi_std_24h",
-    "fuzzy_score_type2", "uncertainty_lower", "uncertainty_upper",
-    "pm25", "pm10", "so2", "no2", "o3", "co", "dust",
-    "temperature", "humidity", "wind_speed", "wind_direction",
-    "pressure", "precipitation", "cloud_cover",
-    "hour_of_day", "is_weekend", "season",
-]
+try:
+    from .feature_engineering import FEATURE_NAMES
+except Exception:
+    from feature_engineering import FEATURE_NAMES  # type: ignore
+
+FEATURE_NAMES = list(FEATURE_NAMES)
+assert len(FEATURE_NAMES) == 54, "ml_models feature schema out of sync"
 HORIZONS = ["1h", "6h", "24h"]
 CLASSES = [0, 1, 2, 3]  # SAFE / WARNING / CRITICAL / HAZARDOUS
 

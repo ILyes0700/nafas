@@ -10,7 +10,7 @@
       </div>
       <div>
         <h1>Classement comparatif réel des modèles</h1>
-        <div class="ph-sub">Comparaison réelle des sept modèles autorisés sur les zones et horizons disponibles. Les cellules restent vides lorsqu’aucun résultat n’est enregistré.</div>
+        <div class="ph-sub">Comparaison réelle des sept modèles autorisés sur les quatre zones actives et les horizons disponibles. Les cellules restent vides lorsqu’aucun résultat réel n’est enregistré.</div>
       </div>
     </div>
     <div class="ph-actions">
@@ -99,7 +99,7 @@
   <!-- CHARTS ROW B -->
   <div class="grid grid-2" style="margin-top:18px">
     <div class="card"><h3>Profil radar des modèles</h3><div class="chart-box"><canvas id="cmp-radar"></canvas></div></div>
-    <div class="card"><h3>Convergence Optuna (RMSE)</h3><div class="chart-box"><canvas id="cmp-optuna"></canvas></div></div>
+    <div class="card"><h3>Convergence Optuna (RMSE)</h3><div class="chart-box"><canvas id="cmp-optuna"></canvas><div class="chart-empty" data-empty-for="cmp-optuna" hidden><strong>Optuna non disponible</strong>Aucun historique Optuna réel n’est fourni par l’entraînement actuel.</div></div></div>
   </div>
 
   <div class="card" style="margin-top:18px">

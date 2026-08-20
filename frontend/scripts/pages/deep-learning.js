@@ -1,5 +1,5 @@
 /**
- * Deep Learning page — classement des sept modèles autorisés.
+ * Deep Learning page — classement des sept modèles autorisés sur quatre zones actives.
  * Data from /backend/api/deep-learning.php. Renders the train/validation/test table,
  * per-zone multi-horizon predictions, actual-vs-predicted chart and a 24×24
  * attention heatmap rendered as a CSS grid.
@@ -10,6 +10,28 @@ window.initDeepLearning = async function () {
   let seriesChart = null;
 
   const $ = (s) => document.querySelector(s);
+  const chartEmpty = (id, title, message) => {
+    const canvas = document.getElementById(id);
+    if (!canvas || !canvas.parentElement) return;
+    const wrap = canvas.parentElement;
+    let note = wrap.querySelector(`[data-empty-for="${id}"]`);
+    if (!note) {
+      note = document.createElement('div');
+      note.className = 'chart-empty';
+      note.dataset.emptyFor = id;
+      wrap.appendChild(note);
+    }
+    note.innerHTML = `<strong>${title}</strong>${message}`;
+    note.hidden = false;
+    canvas.style.display = 'none';
+  };
+  const chartShow = (id) => {
+    const canvas = document.getElementById(id);
+    if (!canvas || !canvas.parentElement) return;
+    canvas.style.display = '';
+    const note = canvas.parentElement.querySelector(`[data-empty-for="${id}"]`);
+    if (note) note.hidden = true;
+  };
 
   async function load() {
     let d;
@@ -19,7 +41,11 @@ window.initDeepLearning = async function () {
       d = await r.json();
     } catch (e) {
       $('#dl-table').querySelector('tbody').innerHTML =
-        `<tr><td colspan="11" class="muted">Erreur réelle du backend : ${e.message}. Vérifiez le journal PHP.</td></tr>`;
+        `<tr><td colspan="11"><div class="cmp-empty-card"><div><strong>Erreur réelle du backend</strong>${e.message}. Vérifiez le journal PHP.</div></div></td></tr>`;
+      renderVs([]);
+      renderPredictions([]);
+      renderSeries(null);
+      renderAttention(null);
       return;
     }
     renderTable(d.models || []);
@@ -32,7 +58,7 @@ window.initDeepLearning = async function () {
   function renderTable(models) {
     const tb = $('#dl-table').querySelector('tbody');
     if (!models || !models.length) {
-      tb.innerHTML = '<tr><td colspan="11" class="muted">Aucun résultat réel. Lancez l\'entraînement sur les sept zones.</td></tr>';
+      tb.innerHTML = '<tr><td colspan="11"><div class="cmp-empty-card"><div><strong>Aucun résultat DL réel</strong>Lancez l’entraînement sur les quatre zones actives.</div></div></td></tr>';
       return;
     }
     const esc = (v) => String(v == null ? '—' : v)
@@ -77,7 +103,7 @@ window.initDeepLearning = async function () {
 
   function renderPredictions(preds) {
     const box = $('#dl-predictions');
-    if (!preds || !preds.length) { box.innerHTML = '<div class="muted">Aucune prédiction.</div>'; return; }
+    if (!preds || !preds.length) { box.innerHTML = '<div class="cmp-empty-card"><div><strong>Aucune prédiction réelle</strong>Les prédictions ne sont pas encore persistées par le pipeline.</div></div>'; return; }
     box.innerHTML = preds.map(p => `
       <div class="dl-pred-card">
         <div class="dl-pred-head">
@@ -97,8 +123,16 @@ window.initDeepLearning = async function () {
   }
 
   function renderSeries(s) {
-    if (!s || typeof Chart === 'undefined') return;
-    if (seriesChart) { try { seriesChart.destroy(); } catch (e) {} }
+    if (seriesChart) { try { seriesChart.destroy(); } catch (e) {} seriesChart = null; }
+    if (!s || !Array.isArray(s.labels) || !s.labels.length) {
+      chartEmpty('dl-series', 'Série réelle indisponible', 'Aucune paire réel/prédit persistée pour le jeu de test.');
+      return;
+    }
+    if (typeof Chart === 'undefined') {
+      chartEmpty('dl-series', 'Graphique indisponible', 'Chart.js n’est pas chargé dans la page.');
+      return;
+    }
+    chartShow('dl-series');
     seriesChart = new Chart($('#dl-series').getContext('2d'), {
       type: 'line',
       data: { labels: s.labels, datasets: [
@@ -111,7 +145,7 @@ window.initDeepLearning = async function () {
 
   function renderAttention(att) {
     const box = $('#dl-attention');
-    if (!att || !att.weights) { box.innerHTML = '<div class="muted">Indisponible.</div>'; return; }
+    if (!att || !att.weights) { box.innerHTML = '<div class="cmp-empty-card"><div><strong>Attention indisponible</strong>Aucun artefact d’attention réel n’est disponible pour ce run.</div></div>'; return; }
     const w = att.weights;
     let max = -Infinity, min = Infinity;
     w.forEach(row => row.forEach(v => { if (v > max) max = v; if (v < min) min = v; }));

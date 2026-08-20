@@ -1,0 +1,40 @@
+{
+  "schema": "nafas-real-7020-4zones-target-aligned-v6-plus24-enriched",
+  "protocol": "70/10/20 chronological",
+  "source": "open_data",
+  "models": [
+    "Random Forest",
+    "XGBoost + Fuzzy",
+    "LSTM",
+    "BiLSTM Simple",
+    "BiLSTM+MultiHead Attn",
+    "BiLSTM+AE",
+    "CNN+AE"
+  ],
+  "zone_scope": [
+    "Gabes_ville",
+    "Ghannouche",
+    "Chott_Salem",
+    "Teboulbou"
+  ],
+  "zone_count": 4,
+  "horizon_count": 3,
+  "unit_count": 12,
+  "status": "running",
+  "completed_units": [
+    "zone1:1h",
+    "zone1:24h",
+    "zone1:6h",
+    "zone2:1h",
+    "zone2:24h",
+    "zone2:6h",
+    "zone3:1h"
+  ],
+  "current": {
+    "zone_id": 3,
+    "horizon": "6h",
+    "model": "BiLSTM+MultiHead Attn",
+    "stage": "deep_fit"
+  },
+  "updated_at": "2026-08-19T01:38:35"
+}

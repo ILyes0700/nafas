@@ -13,11 +13,34 @@ window.initForecastMl = async function () {
     charts.length = 0;
   };
 
+  const chartEmpty = (id, title, message) => {
+    const canvas = document.getElementById(id);
+    if (!canvas || !canvas.parentElement) return;
+    const wrap = canvas.parentElement;
+    let note = wrap.querySelector(`[data-empty-for="${id}"]`);
+    if (!note) {
+      note = document.createElement('div');
+      note.className = 'chart-empty';
+      note.dataset.emptyFor = id;
+      wrap.appendChild(note);
+    }
+    note.innerHTML = `<strong>${title}</strong>${message}`;
+    note.hidden = false;
+    canvas.style.display = 'none';
+  };
+  const chartShow = (id) => {
+    const canvas = document.getElementById(id);
+    if (!canvas || !canvas.parentElement) return;
+    canvas.style.display = '';
+    const note = canvas.parentElement.querySelector(`[data-empty-for="${id}"]`);
+    if (note) note.hidden = true;
+  };
   const clearCanvas = (id) => {
     const canvas = document.getElementById(id);
     if (canvas) {
       const ctx = canvas.getContext('2d');
       if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+      chartShow(id);
     }
   };
 
@@ -26,6 +49,7 @@ window.initForecastMl = async function () {
     if (!canvas || typeof Chart === 'undefined') return false;
     const ctx = canvas.getContext('2d');
     if (!ctx) return false;
+    chartShow(id);
     charts.push(new Chart(ctx, config));
     return true;
   };
@@ -47,6 +71,7 @@ window.initForecastMl = async function () {
     setNote('ml-pdp-note', 'Aucun artefact PDP réel disponible pour cet entraînement.');
     setNote('ml-perm-note', 'Aucun artefact de permutation réel disponible pour cet entraînement.');
     setNote('ml-lime-note', 'Aucun artefact LIME réel disponible pour cet entraînement.');
+    setNote('ml-decision-note', 'Aucun artefact Decision Plot réel n’est fourni par l’endpoint actuel.');
   };
 
   const renderStatus = (data) => {
@@ -94,7 +119,7 @@ window.initForecastMl = async function () {
 
   const renderRoc = (roc) => {
     if (!roc || !Array.isArray(roc.classes) || !roc.classes.length) {
-      clearCanvas('ml-roc');
+      chartEmpty('ml-roc', 'ROC indisponible', 'Aucune courbe ROC réelle n’est persistée pour cet horizon.');
       return;
     }
     const datasets = roc.classes.map((serie) => ({
@@ -121,6 +146,8 @@ window.initForecastMl = async function () {
         options: Object.assign({}, baseOptions, { indexAxis: 'y', plugins: { legend: { display: false } } }),
       });
       setNote('ml-shap-global-note', `Artefact réel : ${data.xai_method || 'TreeSHAP'}.`);
+    } else {
+      chartEmpty('ml-shap-global', 'TreeSHAP indisponible', 'Aucun artefact TreeSHAP réel n’est enregistré pour ce run.');
     }
 
     if (Array.isArray(shap.deep) && shap.deep.length && Array.isArray(shap.global) && shap.global.length) {
@@ -137,6 +164,8 @@ window.initForecastMl = async function () {
         options: Object.assign({}, baseOptions, { indexAxis: 'y' }),
       });
       setNote('ml-shap-deep-note', 'Comparaison calculée à partir des deux artefacts réellement persistés.');
+    } else {
+      chartEmpty('ml-shap-deep', 'DeepSHAP indisponible', 'Les artefacts TreeSHAP et DeepSHAP réels ne sont pas tous disponibles.');
     }
 
     if (Array.isArray(shap.local) && shap.local.length && Number.isFinite(Number(shap.base_value))) {
@@ -154,28 +183,53 @@ window.initForecastMl = async function () {
       labels.push('Prédiction'); values.push([0, cumulative]); colors.push('#0d3b66');
       makeChart('ml-shap-local', { type: 'bar', data: { labels, datasets: [{ data: values, backgroundColor: colors }] }, options: Object.assign({}, baseOptions, { indexAxis: 'y', plugins: { legend: { display: false } } }) });
       setNote('ml-shap-caption', `Base réelle ${shap.base_value} → prédiction réelle ${shap.predicted ?? '—'}`);
+    } else {
+      chartEmpty('ml-shap-local', 'Waterfall indisponible', 'Aucun artefact SHAP local réel n’est enregistré.');
     }
 
     if (Array.isArray(data.lime) && data.lime.length) {
       makeChart('ml-lime', { type: 'bar', data: { labels: data.lime.map((item) => item.feature), datasets: [{ data: data.lime.map((item) => item.weight), backgroundColor: data.lime.map((item) => item.direction === 'positive' ? '#dc2626' : '#16a34a') }] }, options: Object.assign({}, baseOptions, { indexAxis: 'y', plugins: { legend: { display: false } } }) });
       setNote('ml-lime-note', `Artefact réel : ${data.xai_method || 'LIME'}.`);
+    } else {
+      chartEmpty('ml-lime', 'LIME indisponible', 'Aucun artefact LIME réel n’est enregistré.');
     }
 
     if (Array.isArray(data.pdp) && data.pdp.length) {
       makeChart('ml-pdp', { type: 'scatter', data: { datasets: data.pdp.map((item, index) => ({ label: item.feature, data: (item.grid || []).map((x, i) => ({ x, y: (item.values || [])[i] })), borderColor: ['#0d3b66', '#7c3aed', '#16a34a', '#d97706'][index % 4], backgroundColor: 'transparent', showLine: true, pointRadius: 0 })) }, options: Object.assign({}, baseOptions, { scales: { x: { title: { display: true, text: 'Valeur réelle' } }, y: { title: { display: true, text: 'AQI prédit réel' } } } }) });
       setNote('ml-pdp-note', 'Artefact PDP réellement calculé pendant l’entraînement.');
+    } else {
+      chartEmpty('ml-pdp', 'PDP indisponible', 'Aucun artefact PDP réel n’est enregistré.');
     }
 
     if (Array.isArray(data.permutation) && data.permutation.length) {
       makeChart('ml-permutation', { type: 'bar', data: { labels: data.permutation.map((item) => item.feature), datasets: [{ data: data.permutation.map((item) => item.importance), backgroundColor: '#d97706', borderRadius: 5 }] }, options: Object.assign({}, baseOptions, { indexAxis: 'y', plugins: { legend: { display: false } } }) });
       setNote('ml-perm-note', 'Importance de permutation réellement calculée sur les observations persistées.');
+    } else {
+      chartEmpty('ml-permutation', 'Permutation indisponible', 'Aucun artefact de permutation réel n’est enregistré.');
     }
 
     if (Array.isArray(shap.beeswarm) && shap.beeswarm.length) {
       const points = [];
       shap.beeswarm.forEach((feature, y) => (feature.points || []).forEach((point, index) => points.push({ x: point.v, y: y + ((index % 5) - 2) * 0.08, color: point.c })));
       makeChart('ml-beeswarm', { type: 'scatter', data: { datasets: [{ data: points, parsing: false, pointRadius: 3, backgroundColor: points.map((point) => `rgb(${Math.round(37 + (point.color || 0) * 183)},80,${Math.round(220 - (point.color || 0) * 182)})`) }] }, options: Object.assign({}, baseOptions, { plugins: { legend: { display: false } }, scales: { x: { title: { display: true, text: 'Valeur SHAP réelle' } }, y: { min: -0.6, max: shap.beeswarm.length - 0.4, ticks: { stepSize: 1, callback: (value) => shap.beeswarm[value]?.feature || '' } } } }) });
+    } else {
+      chartEmpty('ml-beeswarm', 'Beeswarm indisponible', 'Aucun artefact SHAP par instance réel n’est enregistré.');
     }
+  };
+
+  const renderDecision = () => {
+    chartEmpty('ml-decision', 'Decision Plot indisponible', 'L’endpoint ne fournit pas d’artefact Decision Plot réel pour ce run.');
+  };
+
+  const renderOptuna = (data) => {
+    const box = $('#ml-optuna');
+    if (!box) return;
+    const values = Array.isArray(data?.optuna_best) ? data.optuna_best : [];
+    if (!values.length) {
+      box.innerHTML = '<div class="cmp-empty-card"><div><strong>Hyperparamètres Optuna indisponibles</strong>Aucun historique Optuna réel n’est fourni. Aucun réglage ne sera inventé.</div></div>';
+      return;
+    }
+    box.innerHTML = values.map((item) => `<div class="real-config-card"><b>${item.model || item.name || 'Modèle'}</b><span class="muted small">${item.rmse != null ? `RMSE réel : ${item.rmse}` : 'Configuration réellement persistée.'}</span></div>`).join('');
   };
 
   const renderComparison = (comparison) => {
@@ -220,12 +274,16 @@ window.initForecastMl = async function () {
       renderXai(data);
       renderComparison(data.comparison);
       renderRecommendations(data);
+      renderDecision(data);
+      renderOptuna(data);
     } catch (error) {
       const payload = error.payload || { data_status: 'error', message: error.message };
       renderStatus(payload);
       renderModels([]);
       renderComparison(null);
       renderRecommendations({ recommendations: [] });
+      renderDecision({});
+      renderOptuna({});
     }
   };
 

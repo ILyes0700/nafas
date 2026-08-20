@@ -45,6 +45,7 @@ function dl_metric_rows($table, $split) {
         $pdo = db();
         $allowed = dl_allowed_models();
         $marks = implode(',', array_fill(0, count($allowed), '?'));
+        $activeZoneSql = "'1','2','3','4'";
         $sql = "SELECT model_name, city_id, horizon,
                        AVG(accuracy) AS acc,
                        AVG(precision_macro) AS precision_macro,
@@ -58,7 +59,8 @@ function dl_metric_rows($table, $split) {
                        AVG(auc_roc) AS auc,
                        AVG(avg_latency_ms) AS latency
                 FROM {$table}
-                WHERE horizon IN ('1h','6h','24h')
+                WHERE city_id IN ({$activeZoneSql})
+                  AND horizon IN ('1h','6h','24h')
                   AND model_name IN ({$marks})
                 GROUP BY model_name, city_id, horizon
                 ORDER BY city_id, horizon, model_name";
@@ -110,6 +112,6 @@ json_response([
     'series' => $series,
     'attention' => $attention,
     'message' => empty($models)
-        ? "Aucun résultat réel disponible. Lancez l'entraînement sur les sept zones."
+        ? "Aucun résultat réel disponible pour les quatre zones actives. Lancez l'entraînement."
         : null,
 ]);
