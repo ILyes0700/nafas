@@ -19,9 +19,10 @@ if (!$me || !in_array($me['role'], ['admin'], true)) {
 }
 
 function dl_allowed_models() {
+    // Cette page est strictement Deep Learning : RF/XGBoost restent dans forecast-ml.php.
     return [
-        'Random Forest', 'XGBoost + Fuzzy', 'LSTM', 'BiLSTM Simple',
-        'BiLSTM+MultiHead Attn', 'BiLSTM+AE', 'CNN+AE'
+        'LSTM', 'BiLSTM Simple', 'BiLSTM+MultiHead Attn',
+        'BiLSTM+AE', 'CNN+AE'
     ];
 }
 
@@ -101,7 +102,23 @@ $validation = dl_metric_rows('model_validation_performance', 'validation');
 $test = dl_metric_rows('model_performance', 'test');
 $models = array_merge($training, $validation, $test);
 $predictions = dl_artifact('predictions') ?: [];
+$dlAllowed = dl_allowed_models();
+// The unified deployment can legitimately select an ML model. Such a forecast
+// must not be displayed as a DL result; keep only genuine DL selections.
+if (is_array($predictions)) {
+    foreach ($predictions as &$prediction) {
+        $prediction['horizons'] = array_values(array_filter(
+            is_array($prediction['horizons'] ?? null) ? $prediction['horizons'] : [],
+            static fn($h): bool => in_array((string)($h['model'] ?? ''), $dlAllowed, true)
+        ));
+    }
+    unset($prediction);
+    $predictions = array_values(array_filter($predictions, static fn($p): bool => !empty($p['horizons'])));
+}
 $series = dl_artifact('series') ?: ['labels' => [], 'actual' => [], 'predicted' => []];
+if (!in_array((string)($series['model'] ?? ''), $dlAllowed, true)) {
+    $series = ['labels' => [], 'actual' => [], 'predicted' => [], 'model' => null, 'reason' => 'best_validation_model_is_not_deep_learning'];
+}
 $attention = dl_artifact('attention');
 
 json_response([
@@ -111,7 +128,14 @@ json_response([
     'predictions' => $predictions,
     'series' => $series,
     'attention' => $attention,
-    'message' => empty($models)
-        ? "Aucun résultat réel disponible pour les quatre zones actives. Lancez l'entraînement."
+        'message' => empty($models)
+        ? "Aucun résultat Deep Learning réel disponible pour les quatre zones actives. Lancez l'entraînement."
         : null,
+    'data_source' => [
+        'family' => 'DL',
+        'models' => dl_allowed_models(),
+        'table' => 'open_data',
+        'synthetic' => false,
+        'protocol' => '70% train / 10% validation / 20% test',
+    ],
 ]);

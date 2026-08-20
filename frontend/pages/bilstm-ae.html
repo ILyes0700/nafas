@@ -1,58 +1,42 @@
-<div class="page-head">
-  <div>
-    <h1>BiLSTM + Autoencoder</h1>
-    <p class="muted">
-      Representation latente apprise par autoencodeur, puis prevision
-bidirectionnelle. Entraînée sur 70 % des données réelles, vérifiée sur 10 % de validation et testée sur les 20 % les plus récents Open-Meteo / CAMS.
-    </p>
+<section class="page sci-page" id="page-bilstm-ae">
+  <div class="page-head">
+    <div class="ph-title-block">
+      <div class="ph-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18V6m0 12h16M8 14l3-3 3 2 5-6"/></svg></div>
+      <div>
+        <h1>BiLSTM + Autoencoder</h1>
+        <p class="muted">Représentation latente apprise par autoencodeur puis prévision bidirectionnelle. Protocole réel : 70 % entraînement, 10 % validation, 20 % test Open-Meteo / CAMS.</p>
+      </div>
+    </div>
+    <div class="page-head-actions"><button id="bae-refresh" class="btn btn-ghost">Actualiser</button></div>
   </div>
-  <div class="page-head-actions">
-    <button id="bae-refresh" class="btn btn-ghost">Actualiser</button>
-  </div>
-</div>
 
-<div class="card">
-  <h2>Architecture</h2>
-  <div class="bae-arch">
-    <div class="bae-step"><b>Fenêtre adaptative</b><span class="muted small">24 h court terme / 168 h +24 h</span></div>
-    <div class="bae-arrow">-&gt;</div>
-    <div class="bae-step"><b>Encodeur LSTM</b><span class="muted small">compression</span></div>
-    <div class="bae-arrow">-&gt;</div>
-    <div class="bae-step bae-latent"><b>Latent 16</b><span class="muted small">representation</span></div>
-    <div class="bae-arrow">-&gt;</div>
-    <div class="bae-step"><b>BiLSTM</b><span class="muted small">prevision</span></div>
-    <div class="bae-arrow">-&gt;</div>
-    <div class="bae-step"><b>AQI t+h</b><span class="muted small">1 h / 6 h / 24 h</span></div>
+  <div class="card">
+    <div class="metric-caption"><span>Règle scientifique de sélection</span><span id="bae-selection-badge" class="metric-chip">selection_rule=validation_only · chargement…</span></div>
+    <h2>Architecture réelle de la famille BiLSTM+AE</h2>
+    <div class="bae-arch">
+      <div class="bae-step"><b>Fenêtre causale</b><span class="muted small">24 h / 168 h selon horizon</span></div><div class="bae-arrow">→</div>
+      <div class="bae-step"><b>Encodeur LSTM</b><span class="muted small">compression apprise</span></div><div class="bae-arrow">→</div>
+      <div class="bae-step bae-latent"><b>Latent / AE</b><span class="muted small">représentation réelle</span></div><div class="bae-arrow">→</div>
+      <div class="bae-step"><b>BiLSTM</b><span class="muted small">prévision</span></div><div class="bae-arrow">→</div>
+      <div class="bae-step"><b>AQI t+h</b><span class="muted small">+1 h / +6 h / +24 h</span></div>
+    </div>
+    <p class="muted small" style="margin-top:10px">L’autoencodeur est entraîné sur les données d’entraînement. La validation sert uniquement au choix du modèle et le test reste un rapport final indépendant.</p>
   </div>
-  <p class="muted small" style="margin-top:10px">
-    L'autoencodeur est entraîné en reconstruction sur les seules données
-    d'entraînement. Validation et test restent séparés. Son erreur de reconstruction sert aussi de signal
-    d'anomalie : une fenetre mal reconstruite correspond en general a un
-    episode de pollution atypique.
-  </p>
-</div>
 
-<div class="card">
-  <div class="metric-caption"><span>Mesures réelles par partition, zone et horizon</span><span class="metric-chip">Aucun fallback numérique</span></div>
-  <h2>Performance par horizon</h2>
-  <div class="table-wrap">
-    <table id="bae-table" class="table">
-      <thead>
-        <tr>
-          <th>Modele</th><th>Horizon</th><th>Partition</th><th>MAE</th><th>RMSE</th>
-          <th>MAPE</th><th>R&sup2;</th><th>Latence</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td colspan="8" class="muted">Chargement réel…</td></tr>
-      </tbody>
-    </table>
+  <div class="card">
+    <div class="metric-caption"><span>Mesures réelles par partition, zone et horizon</span><span id="bae-feedback-status" class="muted small">Vérification de l’artifact…</span></div>
+    <h2>Performance BiLSTM+AE par zone et horizon</h2>
+    <div class="table-wrap">
+      <table id="bae-table" class="table">
+        <thead><tr><th>Zone / City</th><th>Modèle</th><th>Horizon</th><th>Partition</th><th>MAE</th><th>RMSE</th><th>MAPE</th><th>R²</th><th>Latence</th></tr></thead>
+        <tbody><tr><td colspan="9" class="muted">Chargement réel…</td></tr></tbody>
+      </table>
+    </div>
   </div>
-</div>
 
-<div class="card">
-  <h2>BiLSTM+AE — RMSE TEST réel par horizon</h2>
-  <div style="position:relative;height:320px">
-    <canvas id="bae-chart"></canvas>
+  <div class="card">
+    <h2>BiLSTM+AE — RMSE TEST réel moyen par horizon</h2>
+    <p class="muted small">Moyenne calculée uniquement à partir des lignes TEST réelles présentes pour les zones actives ; `n` indique le nombre de zones observées.</p>
+    <div class="chart-box chart-box-lg"><canvas id="bae-chart"></canvas></div>
   </div>
-</div>
+</section>

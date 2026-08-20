@@ -1,46 +1,28 @@
-<section class="page sci-page dl-page" id="page-deep-learning">
-
+<section class="page sci-page" id="page-deep-learning">
   <div class="page-head">
     <div class="ph-title-block">
       <div class="ph-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="5" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="19" cy="18" r="2"/>
-          <path d="M7 6l3 5M7 18l3-5M14 12l3-5M14 12l3 5"/>
-        </svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="19" cy="18" r="2"/><path d="M7 6l3 5M7 18l3-5M14 12l3-5M14 12l3 5"/></svg>
       </div>
       <div>
         <h1>Deep Learning — comparaison réelle des modèles autorisés</h1>
-        <div class="ph-sub">Architecture réelle avec 35 Feature historiques, temporelles, polluants et météo. Le contexte est étendu à 168 heures pour +24h. Résultats séparés par modèle, zone et partition.</div>
+        <div class="ph-sub">Architecture réelle avec <b>54 features causales</b> historiques, temporelles, polluants, météo et Open-Meteo enrichies. Le contexte est étendu à 168 heures pour +24h. Résultats séparés par modèle, zone et partition.</div>
       </div>
     </div>
-    <div class="ph-actions">
-      <button class="btn" id="dl-refresh">Rafraîchir</button>
-    </div>
+    <div class="ph-actions"><button class="btn" id="dl-refresh">Rafraîchir</button></div>
   </div>
 
-  <!-- ARCHITECTURE -->
   <div class="card">
-      <h3>Architecture DL réelle — 35 Feature et contexte temporel</h3>
-    <div class="dl-arch">
-      <div class="dl-node">Input<br><small>35 Feature réelles · 24/168h</small></div>
-      <span class="dl-arrow">→</span>
-      <div class="dl-node accent">Conv1D(32)<br><small>motifs locaux</small></div>
-      <span class="dl-arrow">→</span>
-      <div class="dl-node">BiLSTM(64)<br><small>return_seq</small></div>
-      <span class="dl-arrow">→</span>
-      <div class="dl-node accent">Multi-Head Attention<br><small>4 têtes</small></div>
-      <span class="dl-arrow">→</span>
-      <div class="dl-node">BiLSTM(32)</div>
-      <span class="dl-arrow">→</span>
-      <div class="dl-node">Dense(32)</div>
-      <span class="dl-arrow">→</span>
-      <div class="dl-node out">AQI + classe</div>
-    </div>
+    <h3 id="dl-architecture-title">Architecture visuelle du modèle réel sélectionné — chargement…</h3>
+    <div class="muted small">Les blocs indiquent la famille du modèle DL réellement sélectionné par le payload. Les poids d’attention ou les métriques ne sont pas créés côté frontend.</div>
+    <div id="dl-architecture" class="dl-arch" aria-live="polite"><div class="muted">Chargement de l’architecture réelle…</div></div>
   </div>
 
-  <!-- DL COMPARISON TABLE -->
+  <div id="dl-data-status" class="card" style="margin-top:18px"><div class="muted">Chargement des résultats Deep Learning réels…</div></div>
+
   <div class="card" style="margin-top:18px">
-    <h3>Résultats réels de tous les modèles — 70 % train / 10 % validation / 20 % test</h3>
+    <div class="metric-caption"><span id="dl-table-caption">Partition affichée : chargement…</span><span class="metric-chip">70 % train · 10 % validation · 20 % test</span></div>
+    <h3>Résultats réels des cinq modèles Deep Learning</h3>
     <div class="table-wrap" style="margin-top:8px">
       <table class="basic-table sci-table" id="dl-table">
         <thead><tr><th>Zone</th><th>Horizon</th><th>Modèle</th><th>Partition</th><th>Acc %</th><th>F1</th><th>MAE</th><th>RMSE</th><th>R²</th><th>AUC</th><th>Lat (ms)</th></tr></thead>
@@ -49,37 +31,28 @@
     </div>
   </div>
 
-  <!-- LSTM vs BiLSTM COMPARISON -->
   <div class="card" style="margin-top:18px">
-      <h3>Classement comparatif réel des modèles</h3>
-    <div class="muted small">Comparaison calculée uniquement à partir des lignes réelles enregistrées. Le choix opérationnel éventuel ne supprime aucune ligne de validation ou de test.</div>
-      <div id="dl-vs" class="dl-vs-wrap"><div class="muted">Classement réel par horizon en cours de chargement…</div></div>
+    <h3>Classement comparatif réel des modèles DL — Test final</h3>
+    <div class="muted small">Le classement ci-dessous est un rapport Test. Il ne remplace pas la sélection opérationnelle effectuée uniquement sur Validation.</div>
+    <div id="dl-vs" class="dl-vs-wrap"><div class="muted">Classement réel par horizon en cours de chargement…</div></div>
   </div>
 
-  <!-- PREDICTIONS PER ZONE -->
   <div class="card" style="margin-top:18px">
     <h3>Prédictions par zone — modèle choisi sur Validation</h3>
     <div id="dl-predictions" class="dl-pred-grid"><div class="muted">Chargement…</div></div>
   </div>
 
-  <!-- HORIZONS EXPLANATION -->
   <div class="card" style="margin-top:18px">
     <h3>Pourquoi 3 horizons : +1h, +6h, +24h ?</h3>
     <div class="muted">
-      <p><b>+1h (court terme)</b> — la meilleure précision : l'état actuel de l'air prédit presque directement l'heure suivante (RMSE le plus bas).</p>
-      <p><b>+6h (moyen terme)</b> — utile pour anticiper une dégradation dans la demi-journée ; l'erreur augmente car davantage de facteurs (vent, trafic, rejets industriels) peuvent changer.</p>
-      <p><b>+24h (long terme)</b> — le plus utile pour la population et les alertes, mais scientifiquement le plus difficile : l'incertitude météo s'accumule et l'erreur peut augmenter. Le système utilise uniquement les historiques, les variables cycliques et les variables météorologiques réellement disponibles. Aucune donnée synthétique n'est utilisée.</p>
+      <p><b>+1h (court terme)</b> — l’état actuel de l’air est fortement lié à l’heure suivante.</p>
+      <p><b>+6h (moyen terme)</b> — l’erreur augmente car les facteurs météo et émissions peuvent changer.</p>
+      <p><b>+24h (long terme)</b> — l’incertitude est plus élevée ; le système utilise uniquement les historiques, les variables cycliques et les variables météorologiques réelles disponibles. Aucune donnée synthétique n’est utilisée.</p>
     </div>
   </div>
 
-  <!-- ACTUAL VS PRED + ATTENTION -->
   <div class="grid grid-2" style="margin-top:18px">
-    <div class="card"><h3>Prédiction vs réel (jeu de test réel)</h3><div class="muted small">Ligne pleine = valeurs réelles mesurées · pointillés = prédiction du modèle retenu selon la validation, sans supprimer les résultats des autres modèles.</div><div class="chart-box"><canvas id="dl-series"></canvas></div></div>
-    <div class="card">
-      <h3>Carte d'attention BiLSTM — Gabès</h3>
-      <div class="muted small">Poids d'attention <b>réels</b> du BiLSTM (moyennés sur les fenêtres de test). Cellules sombres = heures les plus influentes pour la prédiction. Vide si l'entraînement TensorFlow n'a pas été lancé.</div>
-      <div id="dl-attention" class="attn-wrap"><div class="muted">Chargement…</div></div>
-    </div>
+    <div class="card"><h3>Prédiction vs réel — jeu de test réel</h3><div class="muted small">Ligne pleine = valeurs réelles mesurées · pointillés = prédiction du modèle retenu selon la validation.</div><div class="chart-box"><canvas id="dl-series"></canvas></div></div>
+    <div class="card"><h3>Carte d’attention BiLSTM — Gabès</h3><div class="muted small">Poids d’attention réels du BiLSTM, lorsque l’artifact TensorFlow est présent. L’état vide explique l’absence au lieu d’inventer une heatmap.</div><div id="dl-attention" class="attn-wrap"><div class="muted">Chargement…</div></div></div>
   </div>
-
 </section>

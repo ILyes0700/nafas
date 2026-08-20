@@ -10,13 +10,18 @@ window.initFuzzyType2 = async function () {
   async function load() {
     let d; try { const r = await fetch(`${API}/fuzzy-type2.php`, { credentials: 'same-origin' }); if (!r.ok) throw new Error('HTTP ' + r.status); d = await r.json(); }
     catch (e) { $('#fz-cities').querySelector('tbody').innerHTML = `<tr><td colspan="6" class="muted">Erreur : ${e.message}</td></tr>`; return; }
-    $('#fz-demo-badge').style.display = d.demo ? '' : 'none';
-    if (window.GT && GT.notTrainedGuard && GT.notTrainedGuard(d.demo)) return;
+    $('#fz-demo-badge').style.display = 'none';
+    if (d.data_status !== 'real' || !d.inputs || !d.score) {
+      $('#fz-score').innerHTML = `<div class="cmp-empty-card"><div><strong>Fuzzy réel indisponible</strong>${d.message || 'Aucune mesure open_data réelle disponible.'}</div></div>`;
+      $('#fz-cities').querySelector('tbody').innerHTML = '<tr><td colspan="6" class="muted">Aucune ligne réelle à afficher.</td></tr>';
+      kill();
+      return;
+    }
     const i = d.inputs; $('#fz-in-poll').textContent = i.pollution; $('#fz-in-vuln').textContent = i.vulnerability; $('#fz-in-symp').textContent = i.symptom_severity; $('#fz-in-alerts').textContent = i.alerts_24h;
     const s = d.score;
     $('#fz-score').innerHTML = `<div class=sci-best-head><span class=sci-best-check>\ud83e\udde0</span><div><div class=sci-best-title>fuzzy_score_type2 (feature cl\u00e9 ML/DL)</div><div class=sci-best-name>${s.fuzzy_score_type2} / 100 \u2014 risque ${s.risk_level}</div></div></div>`+
       `<div class=sci-best-metrics><div class=sci-best-metric><span>Incertitude inf.</span><b>${s.uncertainty_lower}</b></div><div class=sci-best-metric><span>Incertitude sup.</span><b>${s.uncertainty_upper}</b></div><div class=sci-best-metric><span>Bande</span><b>${s.uncertainty_band}</b></div></div>`;
-    $('#fz-cities').querySelector('tbody').innerHTML = d.cities.map(c => `<tr><td><b>${c.name}</b> <span class="muted small">${c.name_ar}</span></td><td>${c.score}</td><td>${c.lower}</td><td>${c.upper}</td><td>${c.band}</td><td>${riskPill(c.risk)}</td></tr>`).join('');
+    $('#fz-cities').querySelector('tbody').innerHTML = (d.cities || []).map(c => `<tr><td><b>${c.name}</b> <span class="muted small">${c.name_ar || ''}</span></td><td>${c.score}</td><td>${c.lower}</td><td>${c.upper}</td><td>${c.band}</td><td>${riskPill(c.risk)}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">Aucune mesure réelle par zone.</td></tr>';
     kill();
     const ds = [];
     d.mf.forEach(m => {

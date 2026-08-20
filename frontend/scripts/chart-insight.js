@@ -128,6 +128,20 @@
   function analyze(chart) {
     var type = (chart.config && chart.config.type) || 'line';
     var dss = (chart.data && chart.data.datasets) || [];
+    if (chart.canvas && chart.canvas.id === 'ml-roc') {
+      var rocItems = dss.map(function (d) {
+        var aucMatch = String(d.label || '').match(/AUC\s*[=:]\s*([0-9.]+)/i);
+        return {
+          label: String(d.label || 'Seuil AQI').replace(/\s*\(AUC\s*[=:]\s*[0-9.]+\)/i, ''),
+          auc: aucMatch ? Number(aucMatch[1]) : null
+        };
+      }).filter(function (x) { return x.label || x.auc != null; });
+      return {
+        special: 'roc',
+        sig: 'roc|' + rocItems.map(function (x) { return x.label + ':' + x.auc; }).join('|'),
+        items: rocItems
+      };
+    }
     var series = [];
     var expected = 0;
     dss.forEach(function (d) {
@@ -299,6 +313,19 @@
     return panel;
   }
   function render(panel, info) {
+    if (info.special === 'roc') {
+      if (panel.getAttribute('data-sig') === info.sig) return;
+      panel.setAttribute('data-sig', info.sig);
+      var rocRows = info.items.map(function (item) {
+        return '<span class="cix-chip c-flat">' + item.label + (item.auc == null ? '' : ' · AUC diagnostique ' + item.auc.toFixed(3)) + '</span>';
+      }).join(' ');
+      panel.innerHTML =
+        '<div class="cix-hd"><span class="cix-ic">' + I(IC.report, '#fff') + '</span>' +
+        '<div><h4>Business Intelligence — ROC diagnostique</h4><div class="cix-hd-sub">Lecture des seuils AQI à partir des valeurs réelles</div></div></div>' +
+        '<div class="cix-body"><div class="cix-exec"><span>' + I(IC.insight, '#1d4e89') + '</span><p><b>Interprétation.</b> Cette ROC est une analyse de seuils AQI dérivée de <b>actual_aqi</b> et du score <b>predicted_aqi</b>. L’AUC mesure ici le classement autour de chaque seuil ; elle ne représente pas une probabilité multiclasses calibrée et ne doit pas être lue comme une précision globale.</p></div>' +
+        '<div class="cix-sec acc-slate"><div class="cix-sec-hd">' + I(IC.obs) + 'Seuils réellement tracés</div><p>' + (rocRows || 'Aucun seuil réel disponible.') + '</p></div></div>';
+      return;
+    }
     if (info.skip) { return; }
     if (info.empty) {
       if (panel.getAttribute('data-sig') === 'EMPTY') return;

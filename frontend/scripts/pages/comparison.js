@@ -96,9 +96,11 @@ window.initComparison = async function () {
         </div>
       </div>
       <div class="sci-best-metrics">
-        <div class="sci-best-metric"><span>RMSE</span><b class="pos">${pct(ref.rmse, '-')}</b></div>
-        <div class="sci-best-metric"><span>F1</span><b class="pos">${pct(ref.f1, '+')}</b></div>
-        <div class="sci-best-metric"><span>AUC</span><b class="pos">${pct(ref.auc, '+')}</b></div>
+        <div class="sci-best-metric"><span>RMSE TEST</span><b class="pos">${b.test_rmse ?? '—'}</b></div>
+        <div class="sci-best-metric"><span>RMSE VALIDATION</span><b class="pos">${b.validation_rmse ?? '—'}</b></div>
+        <div class="sci-best-metric"><span>Règle</span><b>Validation seulement</b></div>
+        <div class="sci-best-metric"><span>F1 TEST</span><b class="pos">${num(b.f1)}</b></div>
+        <div class="sci-best-metric"><span>AUC TEST</span><b class="pos">${num(b.auc)}</b></div>
         ${(b.wilcoxon_p || b.wilcoxon_p === 0) ? `<div class="sci-best-metric"><span>Wilcoxon</span><b>${b.wilcoxon_p < 0.001 ? 'p&lt;0.001' : 'p=' + b.wilcoxon_p}</b></div>` : ''}
       </div>
       <div class="sci-best-comp">
@@ -181,8 +183,8 @@ window.initComparison = async function () {
     }
     const labels = m.map(x => x.model);
     const short = labels.map(l => l.replace('BiLSTM', 'BiL').replace(' Baseline', ''));
-    mkChart('cmp-f1', { type: 'bar', data: { labels: short, datasets: [{ label: 'F1', data: m.map(x => x.f1), backgroundColor: NAVY }] },
-      options: Object.assign({}, baseOpts, { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false, suggestedMin: 0.6 } } }) });
+    mkChart('cmp-f1', { type: 'bar', data: { labels: short, datasets: [{ label: 'F1 TEST réel', data: m.map(x => x.f1), backgroundColor: NAVY, borderRadius: 6, maxBarThickness: 42 }] },
+      options: Object.assign({}, baseOpts, { layout: { padding: { top: 8, right: 8, bottom: 4, left: 4 } }, plugins: { legend: { display: false }, title: { display: true, text: 'F1 TEST réel par modèle' } }, scales: { x: { ticks: { autoSkip: false, maxRotation: 38, minRotation: 38, font: { size: 10 } } }, y: { beginAtZero: false, suggestedMin: 0.5, suggestedMax: 1.0, title: { display: true, text: 'F1' } } } }) });
     mkChart('cmp-rmse', { type: 'bar', data: { labels: short, datasets: [{ label: 'RMSE', data: m.map(x => x.rmse), backgroundColor: ORANGE }] },
       options: Object.assign({}, baseOpts, { plugins: { legend: { display: false } } }) });
     mkChart('cmp-lat', { type: 'bar', data: { labels: short, datasets: [{ label: 'Latence (ms)', data: m.map(x => x.latency), backgroundColor: NAVY2 }] },
@@ -238,9 +240,9 @@ window.initComparison = async function () {
     }
     mkChart('cmp-series', { type: 'line', data: { labels: s.labels, datasets: [
       { label: 'Réel', data: s.actual, borderColor: NAVY, backgroundColor: 'transparent', pointRadius: 0, tension: 0.25 },
-      { label: 'Prédit', data: s.predicted, borderColor: RED, backgroundColor: 'transparent', pointRadius: 0, borderDash: [5, 4], tension: 0.25 },
-      { label: 'IC sup.', data: s.upper, borderColor: 'transparent', backgroundColor: 'rgba(220,38,38,.08)', pointRadius: 0, fill: '+1' },
-      { label: 'IC inf.', data: s.lower, borderColor: 'transparent', backgroundColor: 'rgba(220,38,38,.08)', pointRadius: 0, fill: false },
+      { label: `Prédit — ${s.model || 'modèle choisi Validation'}`, data: s.predicted, borderColor: RED, backgroundColor: 'transparent', pointRadius: 0, borderDash: [5, 4], tension: 0.25 },
+      ...(Array.isArray(s.upper) && s.upper.length ? [{ label: 'IC sup.', data: s.upper, borderColor: 'transparent', backgroundColor: 'rgba(220,38,38,.08)', pointRadius: 0, fill: '+1' }] : []),
+      ...(Array.isArray(s.lower) && s.lower.length ? [{ label: 'IC inf.', data: s.lower, borderColor: 'transparent', backgroundColor: 'rgba(220,38,38,.08)', pointRadius: 0, fill: false }] : []),
     ] }, options: Object.assign({}, baseOpts, { plugins: { legend: { labels: { filter: (l) => !l.text.startsWith('IC') } } } }) });
   }
 

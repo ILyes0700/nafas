@@ -65,8 +65,16 @@ function ml_api_roc(array $actual, array $predicted, string $name, string $color
         for ($i = 1; $i < count($points); $i++) {
             $auc += ($points[$i]['x'] - $points[$i - 1]['x']) * ($points[$i]['y'] + $points[$i - 1]['y']) / 2;
         }
-        $out[] = ['name' => $name . ' ≥ ' . $threshold, 'auc' => round(max(0, min(1, $auc)), 3),
-            'fpr' => array_column($points, 'x'), 'tpr' => array_column($points, 'y'), 'threshold' => $threshold, 'color' => $color];
+        $out[] = [
+            'name' => 'Classe AQI ≥ ' . $threshold . ' · score ' . $name,
+            'label' => 'Seuil AQI ≥ ' . $threshold,
+            'auc' => round(max(0, min(1, $auc)), 3),
+            'fpr' => array_column($points, 'x'),
+            'tpr' => array_column($points, 'y'),
+            'threshold' => $threshold,
+            'color' => [50 => '#0d3b66', 100 => '#2f6fb3', 150 => '#16a34a'][$threshold] ?? $color,
+            'derived_from' => 'actual_aqi threshold + predicted_aqi score',
+        ];
     }
     return $out ?: null;
 }
@@ -105,7 +113,7 @@ $empty = static function (string $status, string $message, int $http = 200): voi
         'data_status' => $status,
         'message' => $message,
         'models' => [],
-        'roc' => ['classes' => [], 'macro' => null],
+        'roc' => ['classes' => [], 'macro' => null, 'mode' => 'unavailable'],
         'shap' => ['global' => [], 'local' => [], 'deep' => [], 'beeswarm' => [], 'base_value' => null, 'predicted' => null],
         'pdp' => [], 'permutation' => [], 'lime' => [],
         'xai_method' => null, 'recommendations' => [],
@@ -124,10 +132,8 @@ try {
 
     $horizon = (string)($_GET['horizon'] ?? '1h');
     if (!in_array($horizon, ['1h', '6h', '24h'], true)) $horizon = '1h';
-    $allowedModels = [
-        'Random Forest', 'XGBoost + Fuzzy', 'LSTM', 'BiLSTM Simple',
-        'BiLSTM+MultiHead Attn', 'BiLSTM+AE', 'CNN+AE'
-    ];
+    // Cette page est strictement ML : les modèles profonds sont servis par deep-learning.php.
+    $allowedModels = ['Random Forest', 'XGBoost + Fuzzy'];
     $marks = implode(',', array_fill(0, count($allowedModels), '?'));
     $activeZoneSql = "'1','2','3','4'";
     $st = $pdo->prepare(
@@ -161,12 +167,12 @@ try {
     }
 
     $selection = [
-        'rule' => 'validation_only',
-        'model' => (string)$models[0]['model'],
+        'rule' => 'validation_only_unavailable',
+        'model' => null,
         'validation_rmse' => null,
         'test_is_report_only' => true,
     ];
-    $bestModel = (string)$models[0]['model'];
+    $bestModel = null;
     if (ml_api_table_exists($pdo, 'model_validation_performance')) {
         $vst = $pdo->prepare(
             "SELECT model_name, AVG(rmse) validation_rmse, AVG(r_squared) validation_r2,
@@ -192,20 +198,36 @@ try {
                 'validation_rmse' => $vrow['validation_rmse'] === null ? null : round((float)$vrow['validation_rmse'], 3),
                 'validation_r2' => $vrow['validation_r2'] === null ? null : round((float)$vrow['validation_r2'], 3),
                 'validation_folds' => (int)$vrow['folds'],
+                'test_rmse' => null,
+                'test_f1' => null,
+                'test_auc' => null,
                 'test_is_report_only' => true,
             ];
             break;
         }
     }
+    if ($bestModel !== null) {
+        foreach ($models as $modelRow) {
+            if (($modelRow['model'] ?? null) !== $bestModel) continue;
+            $selection['test_rmse'] = $modelRow['rmse'] ?? null;
+            $selection['test_f1'] = $modelRow['f1'] ?? null;
+            $selection['test_auc'] = $modelRow['auc'] ?? null;
+            break;
+        }
+    }
+
     $cv = ['f1_mean' => null, 'f1_std' => null, 'rmse_mean' => null, 'rmse_std' => null, 'folds' => 0];
-    $cvst = $pdo->prepare(
-        "SELECT AVG(f1_macro) f1_mean, STDDEV_POP(f1_macro) f1_std,
-                AVG(rmse) rmse_mean, STDDEV_POP(rmse) rmse_std, COUNT(*) folds
-         FROM model_performance
-         WHERE city_id IN ({$activeZoneSql}) AND horizon = ? AND model_name = ?"
-    );
-    $cvst->execute([$horizon, $bestModel]);
-    $cvrow = $cvst->fetch(PDO::FETCH_ASSOC);
+    $cvrow = null;
+    if ($bestModel !== null) {
+        $cvst = $pdo->prepare(
+            "SELECT AVG(f1_macro) f1_mean, STDDEV_POP(f1_macro) f1_std,
+                    AVG(rmse) rmse_mean, STDDEV_POP(rmse) rmse_std, COUNT(*) folds
+             FROM model_performance
+             WHERE city_id IN ({$activeZoneSql}) AND horizon = ? AND model_name = ?"
+        );
+        $cvst->execute([$horizon, $bestModel]);
+        $cvrow = $cvst->fetch(PDO::FETCH_ASSOC);
+    }
     if ($cvrow && $cvrow['folds'] !== null) {
         $cv = [
             'f1_mean' => round((float)$cvrow['f1_mean'], 3), 'f1_std' => round((float)$cvrow['f1_std'], 3),
@@ -245,7 +267,7 @@ try {
     }
 
     $rocClasses = [];
-    if (ml_api_table_exists($pdo, 'model_predictions')) {
+    if ($bestModel !== null && ml_api_table_exists($pdo, 'model_predictions')) {
         $pr = $pdo->prepare(
             "SELECT predicted_aqi, actual_aqi FROM model_predictions
              WHERE city_id IN ({$activeZoneSql})
@@ -261,6 +283,31 @@ try {
     }
 
     $recommendations = ml_api_recommendations($shap['global'], $lime);
+
+    // Les hyperparamètres réellement persistés sont affichés comme configuration.
+    // Une courbe Optuna n'est pas inventée si l'historique trial par trial n'est pas stocké.
+    $optunaBest = [];
+    if (ml_api_table_exists($pdo, 'model_hyperparameters')) {
+        try {
+            $hst = $pdo->prepare(
+                "SELECT model_name, params, updated_at FROM model_hyperparameters
+                 WHERE model_name IN ({$marks}) ORDER BY model_name"
+            );
+            $hst->execute($allowedModels);
+            foreach ($hst->fetchAll(PDO::FETCH_ASSOC) as $hrow) {
+                $parsed = ml_api_json((string)($hrow['params'] ?? ''));
+                $optunaBest[] = [
+                    'model' => (string)$hrow['model_name'],
+                    'params' => $parsed ?: [],
+                    'updated_at' => $hrow['updated_at'] ?? null,
+                    'source' => 'model_hyperparameters',
+                ];
+            }
+        } catch (Throwable $ignored) {
+            $optunaBest = [];
+        }
+    }
+
     json_response([
         'ok' => true,
         'data_status' => 'real',
@@ -268,7 +315,14 @@ try {
         'message' => 'Résultats réels issus de la base et du pipeline d’entraînement.',
         'models' => $models,
         'selection' => $selection,
-        'roc' => ['classes' => $rocClasses, 'macro' => null],
+        'roc' => [
+            'classes' => $rocClasses,
+            'macro' => null,
+            'mode' => $rocClasses ? 'aqi_threshold_diagnostic' : 'unavailable',
+            'note' => $rocClasses
+                ? 'AUC diagnostique calculée à partir de seuils AQI sur actual_aqi et du score predicted_aqi; elle ne remplace pas une ROC probabiliste multiclasses.'
+                : 'Aucune paire réelle actual_aqi/predicted_aqi disponible pour cet horizon.',
+        ],
         'shap' => $shap,
         'pdp' => $pdp,
         'permutation' => $permutation,
@@ -277,9 +331,11 @@ try {
         'recommendations' => $recommendations,
         'ai_reco' => ['source' => $recommendations ? 'real_xai_rules' : 'none', 'recommendations' => $recommendations],
         'comparison' => $comparison,
-        'optuna_best' => [],
+        'optuna_best' => $optunaBest,
         'cv' => $cv,
         'data_source' => [
+            'family' => 'ML',
+            'models' => $allowedModels,
             'name' => 'Open-Meteo Air Quality (CAMS Europe) + ERA5',
             'table' => 'open_data', 'cities' => 4,
             'period' => '2024-01-01 → 2026-07-02', 'grain' => 'horaire',
@@ -293,7 +349,7 @@ try {
         'data_status' => 'error',
         'error' => 'ml_backend_error',
         'message' => 'Erreur backend ML : ' . $e->getMessage(),
-        'models' => [], 'roc' => ['classes' => [], 'macro' => null],
+        'models' => [], 'roc' => ['classes' => [], 'macro' => null, 'mode' => 'unavailable'],
         'shap' => ['global' => [], 'local' => [], 'deep' => [], 'beeswarm' => [], 'base_value' => null, 'predicted' => null],
         'pdp' => [], 'permutation' => [], 'lime' => [], 'recommendations' => [],
     ], 500);

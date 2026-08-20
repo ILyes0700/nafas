@@ -2,7 +2,7 @@
 /**
  * Interval Type-2 Fuzzy Logic endpoint — RÉEL.
  * Les entrees (pollution, humidite, temperature...) et les scores par zone sont
- * calcules depuis les vraies mesures api_readings. La reduction de type
+ * calcules depuis les vraies mesures open_data du pipeline d'entraînement. La reduction de type
  * (Karnik-Mendel) est un vrai algorithme deterministe.
  *   GET /backend/api/fuzzy-type2.php
  */
@@ -68,38 +68,54 @@ foreach ($sets as $name => $d) {
 }
 
 $demo = false;
+$dataStatus = 'empty';
+$dataMessage = 'Aucune mesure open_data réelle disponible pour les quatre zones actives.';
 $pollution = 0; $vulnerability = 0; $symptom = 0; $alerts24 = 0;
 $cityRows = [];
 try {
     $pdo = db();
-    $r = $pdo->query("SELECT final_aqi, final_humidity, final_temperature, final_pm25, final_pm10, final_so2 FROM api_readings WHERE final_aqi IS NOT NULL ORDER BY timestamp DESC LIMIT 1")->fetch();
+    $r = $pdo->query("SELECT us_aqi, relative_humidity_2m, temperature_2m, pm2_5, pm10, sulphur_dioxide FROM open_data WHERE city IN ('Gabes_ville','Ghannouche','Chott_Salem','Teboulbou') AND us_aqi IS NOT NULL ORDER BY time DESC LIMIT 1")->fetch();
     if ($r) {
-        $pollution = min(100, (float)$r['final_aqi'] / 5.0);
-        $vulnerability = min(100, max(0, ((((float)$r['final_humidity']) / 100) * 0.3 + ((((float)$r['final_temperature']) - 20) / 40) * 0.3 + (75000 / 150000) * 0.4) * 100));
-        $symptom = min(100, max(0, ((((float)$r['final_pm25']) / 75) * 0.5 + (((float)$r['final_pm10']) / 150) * 0.3 + (((float)$r['final_so2']) / 100) * 0.2) * 100));
-    } else {
-        $demo = true;
+        $dataStatus = 'real';
+        $dataMessage = 'Mesures réelles open_data, source du pipeline ML/DL.';
+        $pollution = min(100, (float)$r['us_aqi'] / 5.0);
+        $humidity = (float)($r['relative_humidity_2m'] ?? 0);
+        $temperature = (float)($r['temperature_2m'] ?? 20);
+        $pm25 = (float)($r['pm2_5'] ?? 0);
+        $pm10 = (float)($r['pm10'] ?? 0);
+        $so2 = (float)($r['sulphur_dioxide'] ?? 0);
+        $vulnerability = min(100, max(0, (($humidity / 100) * 0.3 + (($temperature - 20) / 40) * 0.3 + 0.5 * 0.4) * 100));
+        $symptom = min(100, max(0, (($pm25 / 75) * 0.5 + ($pm10 / 150) * 0.3 + ($so2 / 100) * 0.2) * 100));
     }
     try {
         $a = $pdo->query("SELECT COUNT(*) c FROM notifications WHERE created_at >= (NOW() - INTERVAL 24 HOUR)")->fetch();
         $alerts24 = (int)($a['c'] ?? 0);
     } catch (Throwable $e2) { $alerts24 = 0; }
 
-    $cities = function_exists('gabes_cities') ? gabes_cities() : [];
-    foreach ($cities as $zid => $c) {
-        $st = $pdo->prepare("SELECT final_aqi a FROM api_readings WHERE city_id = ? AND final_aqi IS NOT NULL ORDER BY timestamp DESC LIMIT 1");
-        $st->execute([(string)$zid]);
+    $activeCities = ['Gabes_ville', 'Ghannouche', 'Chott_Salem', 'Teboulbou'];
+    foreach ($activeCities as $cityKey) {
+        $st = $pdo->prepare("SELECT us_aqi AS a FROM open_data WHERE city = ? AND us_aqi IS NOT NULL ORDER BY time DESC LIMIT 1");
+        $st->execute([$cityKey]);
         $row = $st->fetch();
-        $aqi = (float)($row['a'] ?? 0);
-        if ($aqi <= 0) continue;
+        if (!$row) continue;
+        $aqi = (float)$row['a'];
         $p = min(100, $aqi / 5.0);
         list($s, $yl, $yr, $band, $rl) = km_fuzzy($sets, $p);
-        $cityRows[] = ['name' => $c['name_fr'] ?? ('Zone ' . $zid), 'name_ar' => $c['name_ar'] ?? '',
+        $cityRows[] = ['name' => $cityKey, 'name_ar' => '',
             'score' => round($s, 1), 'lower' => round($yl, 1), 'upper' => round($yr, 1),
             'band' => round($band, 1), 'risk' => $rl];
     }
 } catch (Throwable $e) {
-    $demo = true;
+    $dataStatus = 'error';
+    $dataMessage = 'Erreur de lecture des mesures open_data : ' . $e->getMessage();
+}
+
+if ($dataStatus !== 'real') {
+    json_response([
+        'ok' => true, 'data_status' => $dataStatus, 'demo' => false, 'message' => $dataMessage,
+        'x' => $xs, 'mf' => $mf, 'degrees' => [], 'inputs' => null, 'score' => null,
+        'cities' => [], 'reference' => 'Mendel (2017), Springer', 'synthetic' => false,
+    ]);
 }
 
 $degrees = [];
@@ -111,12 +127,13 @@ foreach ($sets as $name => $d) {
 list($score, $yl, $yr, $band, $risk) = km_fuzzy($sets, $pollution);
 
 json_response([
-    'ok' => true, 'demo' => $demo,
+    'ok' => true, 'data_status' => 'real', 'demo' => false, 'message' => $dataMessage,
     'x' => $xs, 'mf' => $mf, 'degrees' => $degrees,
     'inputs' => ['pollution' => round($pollution, 1), 'vulnerability' => round($vulnerability, 1),
                  'symptom_severity' => round($symptom, 1), 'alerts_24h' => $alerts24],
     'score' => ['fuzzy_score_type2' => round($score, 1), 'uncertainty_lower' => round($yl, 1),
                 'uncertainty_upper' => round($yr, 1), 'uncertainty_band' => round($band, 1), 'risk_level' => $risk],
     'cities' => $cityRows,
+    'source' => ['table' => 'open_data', 'zones' => ['Gabes_ville','Ghannouche','Chott_Salem','Teboulbou'], 'synthetic' => false],
     'reference' => 'Mendel (2017), Springer',
 ]);

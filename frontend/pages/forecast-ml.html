@@ -5,7 +5,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 8l7-5 7 5"/><path d="M5 8v8l7 5 7-5V8"/></svg>
       </div>
       <div>
-        <h1>ML &mdash; classement r&eacute;el des mod&egrave;les</h1>
+        <h1>ML &mdash; classement r&eacute;el RF et XGBoost + Fuzzy</h1>
         <div class="ph-sub">Cette page affiche uniquement les m&eacute;triques, pr&eacute;dictions et artefacts XAI r&eacute;ellement persist&eacute;s par le pipeline d&rsquo;entra&icirc;nement. Les sections restent vides lorsqu&rsquo;aucun r&eacute;sultat n&rsquo;est disponible.</div>
       </div>
     </div>
@@ -17,7 +17,7 @@
   </div>
 
   <div class="card">
-    <h3>Classement comparatif r&eacute;el des mod&egrave;les autoris&eacute;s</h3>
+    <h3>Classement r&eacute;el des mod&egrave;les ML &mdash; RF et XGBoost + Fuzzy</h3>
     <div class="table-wrap" style="margin-top:8px"><table class="basic-table sci-table" id="ml-table">
       <thead><tr><th>Mod&egrave;le</th><th>Acc %</th><th>Prec</th><th>Rec</th><th>F1</th><th>MAE</th><th>RMSE</th><th>MAPE</th><th>SMAPE</th><th>R&sup2;</th><th>AUC</th><th>Lat</th></tr></thead>
       <tbody><tr><td colspan="12" class="muted">Chargement&hellip;</td></tr></tbody>
@@ -26,9 +26,9 @@
   </div>
 
   <div class="grid grid-2" style="margin-top:18px">
-    <div class="card"><h3>Courbes ROC (multi-classes + macro)</h3><div class="chart-box chart-box-lg"><canvas id="ml-roc"></canvas></div>
+    <div class="card"><h3>ROC diagnostique r&eacute;elle — seuils AQI du mod&egrave;le s&eacute;lectionn&eacute;</h3><div class="muted small" id="ml-roc-note" style="margin-bottom:8px">Analyse des seuils AQI &agrave; partir de actual_aqi et predicted_aqi r&eacute;els. Elle ne remplace pas une ROC probabiliste multiclasses.</div><div class="chart-box chart-box-lg"><canvas id="ml-roc"></canvas></div>
       <details class="sci-exp"><summary>&#128218; Explication scientifique compl&egrave;te</summary>
-      <ul><li><b>R&ocirc;le :</b> mesurer la capacit&eacute; du mod&egrave;le &agrave; s&eacute;parer les classes de qualit&eacute; de l&rsquo;air (Bon / Mod&eacute;r&eacute; / Mauvais / Dangereux).</li><li><b>Principe math&eacute;matique :</b> la courbe trace le taux de vrais positifs (TPR = recall) contre le taux de faux positifs (FPR) pour tous les seuils de d&eacute;cision. L&rsquo;AUC est l&rsquo;aire sous la courbe (probabilit&eacute; qu&rsquo;un cas positif tir&eacute; au hasard soit mieux class&eacute; qu&rsquo;un n&eacute;gatif).</li><li><b>Axes / couleurs :</b> X = FPR (fausses alertes), Y = TPR (bonnes d&eacute;tections). Chaque couleur = une classe ; la ligne pointill&eacute;e grise = hasard (AUC 0,5).</li><li><b>Interpr&eacute;tation :</b> plus la courbe &laquo; monte &agrave; gauche &raquo;, meilleur est le mod&egrave;le. AUC &gt; 0,9 = excellent.</li><li><b>Limites :</b> l&rsquo;AUC peut &ecirc;tre optimiste sur classes d&eacute;s&eacute;quilibr&eacute;es &rarr; compl&eacute;ter par la courbe Pr&eacute;cision-Rappel.</li><li><b>Erreur &agrave; &eacute;viter :</b> confondre AUC &eacute;lev&eacute;e et bonne calibration ; une AUC forte ne garantit pas des probabilit&eacute;s fiables.</li></ul></details></div>
+      <ul><li><b>R&ocirc;le :</b> diagnostiquer le classement des observations autour des seuils AQI 50, 100 et 150.</li><li><b>Principe r&eacute;el :</b> actual_aqi est transformé en label binaire pour chaque seuil et predicted_aqi sert de score continu. L&rsquo;AUC obtenue est donc une AUC diagnostique de r&eacute;gression, pas une probabilit&eacute; multiclasses.</li><li><b>Axes / couleurs :</b> X = FPR, Y = TPR. Chaque couleur repr&eacute;sente un seuil AQI r&eacute;el et la ligne pointill&eacute;e grise est une r&eacute;f&eacute;rence de hasard non mesur&eacute;e.</li><li><b>Interpr&eacute;tation :</b> une courbe proche du coin sup&eacute;rieur gauche signifie que les scores pr&eacute;dits ordonnent bien les observations pour ce seuil.</li><li><b>Limites :</b> l&rsquo;AUC ne d&eacute;crit pas la calibration ni une classification AQI compl&egrave;te ; les seuils d&eacute;s&eacute;quilibr&eacute;s peuvent produire une valeur optimiste.</li><li><b>Erreur &agrave; &eacute;viter :</b> lire `AUC=1` comme une pr&eacute;cision globale ou une probabilit&eacute; de sant&eacute; publique.</li></ul></details></div>
     <div class="card"><h3>Graphe 1 &mdash; TreeSHAP : importance globale (mod&egrave;les &agrave; arbres) &#9733;</h3><div class="muted small">Le graphique est affich&eacute; uniquement si un artefact TreeSHAP r&eacute;el a &eacute;t&eacute; &eacute;crit par le pipeline Python.</div><div class="chart-box chart-box-lg"><canvas id="ml-shap-global"></canvas></div><div class="muted small" id="ml-shap-global-note" style="margin-top:8px"></div>
       <details class="sci-exp"><summary>&#128218; Explication scientifique compl&egrave;te</summary>
       <ul><li><b>R&ocirc;le :</b> classer les variables (polluants, m&eacute;t&eacute;o) par leur contribution moyenne &agrave; la pr&eacute;diction de l&rsquo;AQI.</li><li><b>Principe math&eacute;matique :</b> la valeur de Shapley &phi;&#7522; r&eacute;partit &eacute;quitablement la pr&eacute;diction entre variables selon la th&eacute;orie des jeux coop&eacute;ratifs ; TreeSHAP la calcule exactement en O(arbres &times; feuilles).</li><li><b>Axes / couleurs :</b> Y = variables, X = |importance| moyenne normalis&eacute;e ; barre plus fonc&eacute;e = plus importante.</li><li><b>Interpr&eacute;tation :</b> la variable du haut est le principal moteur de la qualit&eacute; de l&rsquo;air &agrave; Gab&egrave;s.</li><li><b>Limites :</b> l&rsquo;importance globale masque les effets locaux (voir Waterfall) et les interactions (voir DeepSHAP).</li><li><b>Erreur &agrave; &eacute;viter :</b> interpr&eacute;ter l&rsquo;importance comme une causalit&eacute; ; c&rsquo;est une association apprise par le mod&egrave;le.</li></ul></details></div>
@@ -77,7 +77,7 @@
   </div>
 
   <div class="card" style="margin-top:18px">
-    <h3>Hyperparam&egrave;tres r&eacute;els des mod&egrave;les</h3>
+    <h3>Hyperparam&egrave;tres r&eacute;els des mod&egrave;les ML</h3>
     <div class="muted small">R&eacute;glages effectivement utilis&eacute;s &agrave; l&rsquo;entra&icirc;nement (lus depuis la base). Aucune m&eacute;trique, aucune valeur invent&eacute;e.</div>
     <div class="grid grid-2" id="ml-optuna"><div class="muted">Chargement&hellip;</div></div>
   </div>

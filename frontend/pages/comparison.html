@@ -26,7 +26,7 @@
   <!-- 1. MASTER METRICS TABLE -->
   <div class="card">
     <h3>1. Tableau maître des métriques — horizon +1h</h3>
-    <div class="muted small">Classement calculé sur les métriques TEST réellement enregistrées. RMSE/MAE plus bas = mieux ; F1/R²/AUC plus haut = mieux.</div>
+    <div class="muted small">Les métriques TEST sont affichées comme rapport final. Le modèle recommandé est choisi séparément par RMSE VALIDATION ; RMSE/MAE plus bas = mieux ; F1/R²/AUC plus haut = mieux.</div>
     <div class="table-wrap" style="margin-top:8px">
       <table class="basic-table sci-table" id="cmp-master">
         <thead><tr>
@@ -99,11 +99,11 @@
   <!-- CHARTS ROW B -->
   <div class="grid grid-2" style="margin-top:18px">
     <div class="card"><h3>Profil radar des modèles</h3><div class="chart-box"><canvas id="cmp-radar"></canvas></div></div>
-    <div class="card"><h3>Convergence Optuna (RMSE)</h3><div class="chart-box"><canvas id="cmp-optuna"></canvas><div class="chart-empty" data-empty-for="cmp-optuna" hidden><strong>Optuna non disponible</strong>Aucun historique Optuna réel n’est fourni par l’entraînement actuel.</div></div></div>
+    <div class="card"><h3>Convergence Optuna (RMSE)</h3><div class="chart-box"><canvas id="cmp-optuna"></canvas><div class="chart-empty" data-empty-for="cmp-optuna" hidden><strong>Optuna non disponible</strong>Aucun historique trial par trial n’est persisté par le pipeline actuel ; aucune courbe ne sera inventée.</div></div></div>
   </div>
 
   <div class="card" style="margin-top:18px">
-    <h3>Prédiction vs réel — meilleur modèle (72h)</h3>
+    <h3>Prédiction vs réel — modèle choisi sur Validation (72h de TEST)</h3>
     <div class="chart-box chart-box-lg"><canvas id="cmp-series"></canvas></div>
   </div>
 

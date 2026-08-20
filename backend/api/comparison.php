@@ -87,10 +87,30 @@ try {
         ];
     }
 
+    // Test is displayed for reporting, never used to choose deployment.
     $bestRmse = min(array_column($master, 'rmse'));
+    $selectedModel = null;
+    $selectedValidationRmse = null;
+    try {
+        $vst = $pdo->prepare(
+            "SELECT model_name, AVG(rmse) validation_rmse
+             FROM model_validation_performance
+             WHERE city_id IN ({$activeZoneSql}) AND horizon = '1h'
+               AND model_name IN ({$marks})
+             GROUP BY model_name ORDER BY AVG(rmse) ASC LIMIT 1"
+        );
+        $vst->execute($allowed);
+        $vbest = $vst->fetch(PDO::FETCH_ASSOC);
+        if ($vbest) {
+            $selectedModel = (string)$vbest['model_name'];
+            $selectedValidationRmse = $vbest['validation_rmse'] === null ? null : round((float)$vbest['validation_rmse'], 3);
+        }
+    } catch (Throwable $ignored) {
+        $selectedModel = null;
+    }
     foreach ($master as &$m) {
-        $m['best'] = ((float)$m['rmse'] === (float)$bestRmse);
-        $m['recommended'] = false;
+        $m['best'] = ((float)$m['rmse'] === (float)$bestRmse); // best TEST, reported only
+        $m['recommended'] = $selectedModel !== null && $m['model'] === $selectedModel;
     }
     unset($m);
 
@@ -170,12 +190,42 @@ try {
         ];
     }
 
-    $best = $master[0] ?? null;
+    $best = null;
+    foreach ($master as $candidate) {
+        if ($selectedModel !== null && $candidate['model'] === $selectedModel) { $best = $candidate; break; }
+    }
+    $series = ['labels' => [], 'actual' => [], 'predicted' => [], 'lower' => [], 'upper' => [], 'model' => $selectedModel, 'horizon' => '1h'];
+    if ($selectedModel !== null) {
+        try {
+            $pst = $pdo->prepare(
+                "SELECT timestamp, actual_aqi, predicted_aqi
+                 FROM model_predictions
+                 WHERE city_id IN ({$activeZoneSql}) AND horizon = '1h'
+                   AND model_name = ? AND actual_aqi IS NOT NULL AND predicted_aqi IS NOT NULL
+                 ORDER BY timestamp DESC LIMIT 72"
+            );
+            $pst->execute([$selectedModel]);
+            $pairs = array_reverse($pst->fetchAll(PDO::FETCH_ASSOC));
+            foreach ($pairs as $pair) {
+                $series['labels'][] = (string)$pair['timestamp'];
+                $series['actual'][] = round((float)$pair['actual_aqi'], 2);
+                $series['predicted'][] = round((float)$pair['predicted_aqi'], 2);
+            }
+        } catch (Throwable $ignored) {
+            $series = ['labels' => [], 'actual' => [], 'predicted' => [], 'lower' => [], 'upper' => [], 'model' => $selectedModel, 'horizon' => '1h'];
+        }
+    }
     $bestPayload = $best ? [
         'name' => $best['model'],
+        'validation_rmse' => $selectedValidationRmse,
+        'test_rmse' => $best['rmse'],
+        'f1' => $best['f1'],
+        'auc' => $best['auc'],
+        'selection_rule' => 'validation_only',
+        'test_is_report_only' => true,
         'vs_baseline' => ['rmse' => null, 'f1' => null, 'auc' => null],
         'wilcoxon_p' => null,
-        'components' => ['Résultat TEST réel', 'Sélection et classement indépendants des autres modèles', 'Données des quatre zones actives'],
+        'components' => ['Sélection par RMSE VALIDATION', 'Métriques TEST affichées comme rapport final', 'Données réelles des quatre zones actives'],
     ] : null;
 
     json_response([
@@ -192,7 +242,7 @@ try {
         'literatureNote' => '',
         'optuna' => [],
         'radar' => ['axes' => ['Accuracy', 'F1', 'R²', 'Vitesse'], 'models' => $radarModels],
-        'series' => ['labels' => [], 'actual' => [], 'predicted' => [], 'lower' => [], 'upper' => []],
+        'series' => $series,
         'best' => $bestPayload,
         'allowed_models' => $allowed,
         'protocol' => '70% train / 10% validation / 20% test',

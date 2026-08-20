@@ -34,7 +34,7 @@ const ROUTES = {
   /* v4.0 : nouveau modele BiLSTM + Autoencoder. Il partage la page
      deep-learning.html, dont le JS affiche desormais l'onglet "BiLSTM+AE"
      a partir des lignes model_performance portant ce model_name. */
-  'bilstm-ae'      : { file: 'pages/deep-learning.html', title: 'BiLSTM + Autoencoder', ar: 'المشفّر التلقائي', init: 'initDeepLearning' },
+  'bilstm-ae'      : { file: 'pages/bilstm-ae.html', title: 'BiLSTM + Autoencoder', ar: 'المشفّر التلقائي', init: 'initBilstmAe' },
   'anomaly'        : { file: 'pages/anomaly.html', title: 'Anomaly Detection', ar: 'كشف الشذوذ', init: 'initAnomaly' },
   'comparison'     : { file: 'pages/comparison.html', title: 'Model Comparison', ar: 'مقارنة النماذج', init: 'initComparison' },
   'fuzzy-type2'    : { file: 'pages/fuzzy-type2.html', title: 'Fuzzy Logic Type-2', ar: 'المنطق الضبابي', init: 'initFuzzyType2' },
